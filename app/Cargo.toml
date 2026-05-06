@@ -5,3 +5,4 @@ edition = "2024"
 
 [dependencies]
 poke-nav = { workspace = true }
+crossterm = "0.29.0"

@@ -12,3 +12,12 @@ pub enum NdsFileData {
     Parsed(ParsedNdsFile),
     Raw(Vec<u8>),
 }
+
+impl NdsFileData {
+    pub fn raw(&self) -> Option<&[u8]> {
+        match self {
+            NdsFileData::Raw(data) => Some(data),
+            _ => None,
+        }
+    }
+}

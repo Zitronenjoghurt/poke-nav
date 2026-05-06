@@ -2,6 +2,7 @@ use crate::codec::common::rom::RomReadError;
 use crate::codec::nds::rom::NdsRomReadError;
 use std::io::{Read, Seek};
 
+pub mod hgss_map;
 pub mod narc;
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
