@@ -8,6 +8,6 @@ fn main() {
 
     let raw_rom = RawRom::read(&mut reader).unwrap();
     match raw_rom {
-        RawRom::Nds(nds) => println!("{}", nds.header.game_title),
+        RawRom::Nds(nds) => nds.fs.print_tree(),
     }
 }

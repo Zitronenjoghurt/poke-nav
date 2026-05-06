@@ -1,4 +1,4 @@
-use crate::codec::nds::rom::RawNdsRom;
+use crate::codec::nds::rom::{NdsRomReadError, RawNdsRom};
 use std::io::{Read, Seek};
 
 pub enum RawRom {
@@ -20,8 +20,12 @@ pub enum RomReadError {
     Io(#[from] std::io::Error),
     #[error(transparent)]
     Parse(#[from] binrw::Error),
+    #[error("ROM is too small")]
+    RomTooSmall,
     #[error("Unknown ROM format")]
     UnknownFormat,
+    #[error(transparent)]
+    Nds(#[from] NdsRomReadError),
 }
 
 pub trait RawRomTrait: Sized {

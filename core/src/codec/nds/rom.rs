@@ -2,10 +2,16 @@ use crate::codec::common::rom::{RawRomTrait, RomReadError};
 use binrw::BinRead;
 use std::io::{Read, Seek, SeekFrom};
 
+mod fat;
+mod fnt;
+mod fs;
 mod header;
 
 pub struct RawNdsRom {
     pub header: header::NdsHeader,
+    pub arm9_binary: Vec<u8>,
+    pub arm7_binary: Vec<u8>,
+    pub fs: fs::NdsFileSystem,
 }
 
 impl RawRomTrait for RawNdsRom {
@@ -29,6 +35,41 @@ impl RawRomTrait for RawNdsRom {
     fn read<R: Read + Seek>(reader: &mut R) -> Result<Self, RomReadError> {
         reader.seek(SeekFrom::Start(0))?;
         let header = header::NdsHeader::read(reader)?;
-        Ok(Self { header })
+
+        let mut arm9_binary = vec![0u8; header.arm9_size as usize];
+        reader.seek(SeekFrom::Start(header.arm9_offset as u64))?;
+        reader
+            .read_exact(&mut arm9_binary)
+            .map_err(|_| NdsRomReadError::Arm9BinaryLocation)?;
+
+        let mut arm7_binary = vec![0u8; header.arm7_size as usize];
+        reader.seek(SeekFrom::Start(header.arm7_offset as u64))?;
+        reader
+            .read_exact(&mut arm7_binary)
+            .map_err(|_| NdsRomReadError::Arm7BinaryLocation)?;
+
+        let fs = fs::NdsFileSystem::read(
+            reader,
+            header.fat_offset,
+            header.fat_size,
+            header.fnt_offset,
+        )?;
+
+        Ok(Self {
+            header,
+            arm9_binary,
+            arm7_binary,
+            fs,
+        })
     }
+}
+
+#[derive(Debug, thiserror::Error)]
+pub enum NdsRomReadError {
+    #[error("Invalid arm7 binary location")]
+    Arm7BinaryLocation,
+    #[error("Invalid arm9 binary location")]
+    Arm9BinaryLocation,
+    #[error("Failed to read the FNT")]
+    FNTRead,
 }
