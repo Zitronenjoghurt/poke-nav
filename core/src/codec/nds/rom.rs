@@ -1,11 +1,11 @@
 use crate::codec::common::rom::{RawRomTrait, RomReadError};
+use crate::codec::nds::fs;
 use binrw::BinRead;
 use std::io::{Read, Seek, SeekFrom};
 
-mod fat;
-mod fnt;
-mod fs;
-mod header;
+pub mod fat;
+pub mod fnt;
+pub mod header;
 
 pub struct RawNdsRom {
     pub header: header::NdsHeader,
@@ -72,4 +72,6 @@ pub enum NdsRomReadError {
     Arm9BinaryLocation,
     #[error("Failed to read the FNT")]
     FNTRead,
+    #[error("Unknown file format")]
+    UnknownFileFormat,
 }
