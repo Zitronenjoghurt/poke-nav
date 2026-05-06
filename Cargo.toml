@@ -1,0 +1,6 @@
+[workspace]
+resolver = "3"
+members = ["app", "core"]
+
+[workspace.dependencies]
+poke-nav = { path = "core" }
