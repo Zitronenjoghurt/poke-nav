@@ -1,16 +1,29 @@
-use crate::codec::nds::rom::{NdsRomReadError, RawNdsRom};
+use crate::codec::common::platform::Platform;
+use crate::codec::nds::rom::{NdsRom, NdsRomReadError};
 use std::io::{Read, Seek};
 
-pub enum RawRom {
-    Nds(RawNdsRom),
+pub enum Rom {
+    Nds(NdsRom),
 }
 
-impl RawRom {
+impl Rom {
     pub fn read<R: Read + Seek>(reader: &mut R) -> Result<Self, RomReadError> {
-        if RawNdsRom::probe(reader)? {
-            return Ok(Self::Nds(RawNdsRom::read(reader)?));
+        if NdsRom::probe(reader)? {
+            return Ok(Self::Nds(NdsRom::read(reader)?));
         }
         Err(RomReadError::UnknownFormat)
+    }
+
+    pub fn name(&self) -> &str {
+        match self {
+            Self::Nds(rom) => rom.name(),
+        }
+    }
+
+    pub fn platform(&self) -> Platform {
+        match self {
+            Self::Nds(_) => Platform::Nds,
+        }
     }
 }
 
@@ -28,7 +41,8 @@ pub enum RomReadError {
     Nds(#[from] NdsRomReadError),
 }
 
-pub trait RawRomTrait: Sized {
+pub trait RomTrait: Sized {
     fn probe<R: Read + Seek>(reader: &mut R) -> Result<bool, RomReadError>;
     fn read<R: Read + Seek>(reader: &mut R) -> Result<Self, RomReadError>;
+    fn name(&self) -> &str;
 }

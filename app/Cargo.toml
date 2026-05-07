@@ -12,6 +12,7 @@ egui_dock = { version = "0.19.1", features = ["serde"] }
 egui-notify = "0.22.0"
 egui-phosphor = { version = "0.12.0", features = ["regular"] }
 log = "0.4.29"
+rfd = "0.17.2"
 serde = { version = "1.0.228", features = ["derive"] }
 strum = { workspace = true }
 strum_macros = { workspace = true }
@@ -19,6 +20,7 @@ web-time = "1.1.0"
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 eframe = { version = "0.34.2", default-features = false, features = ["persistence", "wayland", "wgpu", "x11"] }
+pollster = "0.4.0"
 wgpu = { version = "29.0.3", features = ["metal", "vulkan", "dx12"] }
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]

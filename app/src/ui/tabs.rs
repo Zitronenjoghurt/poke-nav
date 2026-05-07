@@ -1,5 +1,7 @@
 use crate::ui::state::UiState;
+use crate::utils::task::Task;
 use egui::{Ui, WidgetText};
+use poke_nav::codec::common::rom::Rom;
 use strum_macros::EnumIter;
 
 mod map;
@@ -7,6 +9,7 @@ mod settings;
 
 pub struct TabViewer<'a> {
     pub state: &'a mut UiState,
+    pub loaded_rom: &'a mut Task<Rom>,
 }
 
 impl<'a> egui_dock::TabViewer for TabViewer<'a> {

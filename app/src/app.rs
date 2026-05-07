@@ -1,14 +1,18 @@
 use crate::ui::state::UiState;
 use crate::ui::tabs::{Tab, TabViewer};
+use crate::utils::task::Task;
 use eframe::{CreationContext, Frame, Storage};
-use egui::{CentralPanel, Context, FontDefinitions, Ui};
+use egui::{CentralPanel, FontDefinitions, Ui};
 use egui_dock::DockState;
+use poke_nav::codec::common::rom::Rom;
 use strum::IntoEnumIterator;
 
 #[derive(serde::Serialize, serde::Deserialize)]
 pub struct PokeNav {
     dock: DockState<Tab>,
     ui_state: UiState,
+    #[serde(skip, default)]
+    loaded_rom: Task<Rom>,
 }
 
 impl Default for PokeNav {
@@ -16,6 +20,7 @@ impl Default for PokeNav {
         Self {
             dock: DockState::new(vec![Tab::Map]),
             ui_state: Default::default(),
+            loaded_rom: Default::default(),
         }
     }
 }
@@ -28,7 +33,7 @@ impl PokeNav {
             .unwrap_or_default()
     }
 
-    fn setup_fonts(ctx: &Context) {
+    fn setup_fonts(ctx: &egui::Context) {
         let mut fonts = FontDefinitions::default();
         egui_phosphor::add_to_fonts(&mut fonts, egui_phosphor::Variant::Regular);
         ctx.set_fonts(fonts);
@@ -51,6 +56,7 @@ impl PokeNav {
         CentralPanel::default().show_inside(ui, |ui| {
             let mut viewer = TabViewer {
                 state: &mut self.ui_state,
+                loaded_rom: &mut self.loaded_rom,
             };
             egui_dock::DockArea::new(&mut self.dock)
                 .style(egui_dock::Style::from_egui(ui.style().as_ref()))

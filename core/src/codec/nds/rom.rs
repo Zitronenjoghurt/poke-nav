@@ -1,4 +1,4 @@
-use crate::codec::common::rom::{RawRomTrait, RomReadError};
+use crate::codec::common::rom::{RomReadError, RomTrait};
 use crate::codec::nds::fs;
 use binrw::BinRead;
 use std::io::{Read, Seek, SeekFrom};
@@ -7,14 +7,14 @@ pub mod fat;
 pub mod fnt;
 pub mod header;
 
-pub struct RawNdsRom {
+pub struct NdsRom {
     pub header: header::NdsHeader,
     pub arm9_binary: Vec<u8>,
     pub arm7_binary: Vec<u8>,
     pub fs: fs::NdsFileSystem,
 }
 
-impl RawRomTrait for RawNdsRom {
+impl RomTrait for NdsRom {
     fn probe<R: Read + Seek>(reader: &mut R) -> Result<bool, RomReadError> {
         let pos = reader.stream_position()?;
         let result: Result<_, std::io::Error> = (|| {
@@ -61,6 +61,10 @@ impl RawRomTrait for RawNdsRom {
             arm7_binary,
             fs,
         })
+    }
+
+    fn name(&self) -> &str {
+        self.header.game_title.as_str()
     }
 }
 
