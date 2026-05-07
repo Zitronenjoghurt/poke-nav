@@ -1,0 +1,9 @@
+services:
+  poke-nav-server:
+    container_name: poke-nav-server
+    build:
+      context: ../..
+      dockerfile: server/docker/Dockerfile
+    ports:
+      - "44987:44987"
+    restart: unless-stopped

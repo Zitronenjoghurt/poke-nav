@@ -5,4 +5,34 @@ edition = "2024"
 
 [dependencies]
 poke-nav = { workspace = true }
-crossterm = "0.29.0"
+anyhow = "1.0.102"
+eframe = { version = "0.34.2", default-features = false, features = ["persistence"] }
+egui = "0.34.2"
+egui_dock = { version = "0.19.1", features = ["serde"] }
+egui-notify = "0.22.0"
+egui-phosphor = { version = "0.12.0", features = ["regular"] }
+log = "0.4.29"
+serde = { version = "1.0.228", features = ["derive"] }
+strum = { workspace = true }
+strum_macros = { workspace = true }
+web-time = "1.1.0"
+
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+eframe = { version = "0.34.2", default-features = false, features = ["persistence", "wayland", "wgpu", "x11"] }
+wgpu = { version = "29.0.3", features = ["metal", "vulkan", "dx12"] }
+
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+eframe = { version = "0.34.2", default-features = false, features = ["glow", "persistence"] }
+wasm-bindgen-futures = "0.4.71"
+web-sys = "0.3.70"
+
+[build-dependencies]
+winresource = "0.1"
+
+[package.metadata.bundle]
+name = "Poké-Nav"
+identifier = "io.github.zitronenjoghurt.poke-nav"
+short_description = "A navigation tool akin to Google Maps but for Pokémon games."
+icon = []
+
+[package.metadata.winresource]

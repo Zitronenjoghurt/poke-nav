@@ -1,6 +1,8 @@
 [workspace]
 resolver = "3"
-members = ["app", "core"]
+members = ["app", "core", "server"]
 
 [workspace.dependencies]
 poke-nav = { path = "core" }
+strum = "0.28.0"
+strum_macros = "0.28.0"

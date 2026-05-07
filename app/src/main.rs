@@ -1,77 +1,63 @@
-use crossterm::{
-    event::{self, Event, KeyCode, KeyEvent},
-    terminal,
-};
-use poke_nav::codec::common::fmt::format_bytes;
-use poke_nav::codec::common::rom::RawRom;
-use poke_nav::codec::nds::formats::hgss_map::HgSsMap;
-use poke_nav::codec::nds::formats::ParsedNdsFile;
-use poke_nav::codec::nds::fs::file::NdsFileData;
-use poke_nav::codec::nds::games::hgss::HgSsKnownFile;
-use std::path::PathBuf;
-
+#[cfg(not(target_arch = "wasm32"))]
 fn main() {
-    let rom_path = PathBuf::from("./test/hgss.nds");
-    let file = std::fs::File::open(rom_path).unwrap();
-    let mut reader = std::io::BufReader::new(file);
-
-    let raw_rom = RawRom::read(&mut reader).unwrap();
-    let RawRom::Nds(nds) = raw_rom;
-
-    let file = nds.fs.get_file(HgSsKnownFile::LandData).unwrap();
-    let NdsFileData::Parsed(ParsedNdsFile::Narc(narc)) = &file.data else {
-        eprintln!("not a parsed NARC");
-        return;
+    let native_options = eframe::NativeOptions {
+        renderer: eframe::Renderer::Wgpu,
+        viewport: egui::ViewportBuilder::default()
+            .with_maximized(true)
+            .with_drag_and_drop(true)
+            .with_title("Poké-Nav")
+            .with_app_id("io.github.zitronenjoghurt.poke-nav"),
+        persist_window: true,
+        ..Default::default()
     };
 
-    let total = narc.fs.files.len();
-    let mut index: usize = 0;
+    eframe::run_native(
+        "Poké-Nav",
+        native_options,
+        Box::new(|cc| Ok(Box::new(poke_nav_app::PokeNav::new(cc)))),
+    )
+    .expect("Failed to run egui application.");
+}
 
-    terminal::enable_raw_mode().unwrap();
+#[cfg(target_arch = "wasm32")]
+fn main() {
+    use eframe::wasm_bindgen::JsCast as _;
+    let web_options = eframe::WebOptions::default();
 
-    loop {
-        print!("\x1B[2J\x1B[H");
+    eframe::WebLogger::init(log::LevelFilter::Debug).ok();
 
-        let data = narc.fs.files.get(index).unwrap().data.raw().unwrap();
-        let mut cursor = std::io::Cursor::new(data);
+    wasm_bindgen_futures::spawn_local(async {
+        let document = web_sys::window()
+            .expect("No window")
+            .document()
+            .expect("No document");
 
-        match HgSsMap::read(&mut cursor) {
-            Ok(map) => {
-                println!(
-                    "map {index}/{total}  |  size {}  |  ←/→ navigate  |  q quit\r",
-                    format_bytes(data.len())
-                );
-                println!(
-                    "objects: {}  |  bdhc: {} bytes\r",
-                    map.objects.len(),
-                    map.bdhc.len()
-                );
-                println!("\r");
-                map.permissions.print_grid();
-            }
-            Err(e) => {
-                println!("map {index}/{total}  |  failed to parse: {e}\r");
-            }
-        }
+        let canvas = document
+            .get_element_by_id("app_canvas")
+            .expect("Failed to find app_canvas")
+            .dyn_into::<web_sys::HtmlCanvasElement>()
+            .expect("app_canvas was not a HtmlCanvasElement");
 
-        loop {
-            if let Event::Key(KeyEvent { code, .. }) = event::read().unwrap() {
-                match code {
-                    KeyCode::Right | KeyCode::Down => {
-                        index = (index + 1) % total;
-                        break;
-                    }
-                    KeyCode::Left | KeyCode::Up => {
-                        index = (index + total - 1) % total;
-                        break;
-                    }
-                    KeyCode::Char('q') | KeyCode::Esc => {
-                        terminal::disable_raw_mode().unwrap();
-                        return;
-                    }
-                    _ => {}
+        let start_result = eframe::WebRunner::new()
+            .start(
+                canvas,
+                web_options,
+                Box::new(|cc| Ok(Box::new(poke_nav_app::PokeNav::new(cc)))),
+            )
+            .await;
+
+        if let Some(loading_text) = document.get_element_by_id("loading_text") {
+            match start_result {
+                Ok(_) => {
+                    loading_text.remove();
+                }
+                Err(e) => {
+                    loading_text.set_inner_html(
+                        "<p> The app has crashed. See the developer console for details. </p>",
+                    );
+                    panic!("Failed to start eframe: {e:?}");
                 }
             }
         }
-    }
+    });
 }
