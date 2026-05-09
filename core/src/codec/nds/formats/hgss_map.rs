@@ -5,6 +5,7 @@ use std::io::{Read, Seek, SeekFrom};
 /// Source: https://hirotdk.neocities.org/FileSpecs#Maps
 pub struct HgSsMap {
     pub header: HgSsMapHeader,
+    pub unknown_data: Option<Vec<u8>>,
     pub permissions: HgSsMapPermissions,
     pub objects: Vec<HgSsMapObject>,
     pub nsbmd: Vec<u8>,
@@ -32,6 +33,20 @@ impl HgSsMap {
     pub fn read<R: Read + Seek>(reader: &mut R) -> Result<Self, binrw::Error> {
         let header = HgSsMapHeader::read(reader)?;
 
+        // Found through my own experimentation
+        // What hirotdk called an "unknown size" might be a 2 byte magic (0x1234) followed by a 2 byte size field
+        // The size determines the size of the following section (of unknown purpose)
+        let unknown_magic: u16 = reader.read_le()?;
+        let unknown_data = if unknown_magic == 0x1234 {
+            let size: u16 = reader.read_le()?;
+            let mut buf = vec![0u8; size as usize];
+            reader.read_exact(&mut buf)?;
+            Some(buf)
+        } else {
+            reader.seek(SeekFrom::Current(-2))?;
+            None
+        };
+
         let permissions = HgSsMapPermissions::read(reader)?;
 
         let num_objects = header.objects_size / 48;
@@ -48,6 +63,7 @@ impl HgSsMap {
 
         Ok(Self {
             header,
+            unknown_data,
             permissions,
             objects,
             nsbmd,
@@ -64,7 +80,6 @@ pub struct HgSsMapHeader {
     pub objects_size: u32,
     pub nsbmd_size: u32,
     pub bdhc_size: u32,
-    pub unknown_size: u32,
 }
 
 #[binrw]
@@ -76,31 +91,21 @@ pub struct HgSsMapPermissions {
 }
 
 impl HgSsMapPermissions {
-    pub fn print_grid(&self) {
-        use HgSsMapSpecialPermission::*;
+    pub fn to_grid_string(&self) -> String {
+        let mut out = String::new();
         for row in (0..32).rev() {
             for col in 0..32 {
                 let tile = &self.tiles[row * 32 + col];
                 let ch = if tile.movement == 0x08 || tile.movement == 0x80 {
                     "██"
                 } else {
-                    match tile.special() {
-                        Grass | HighGrass | GrassMud => ",,",
-                        Surfing | Waterfall | WaterSplash => "~~",
-                        Blocked => "XX",
-                        StairsUp | StairsDown | GoDown => "//",
-                        DoorNoAnim | DoorOpening | DoorJumpWarp | ExitBuilding => "[]",
-                        JumpUp | JumpDown | RideJumpLeft => "^^",
-                        RockClimb => "RC",
-                        SnowWaist | SnowHead | SnowLow => "::",
-                        CaveEncounter | PlainsEncounter => "..",
-                        _ => "  ",
-                    }
+                    tile.special().icon()
                 };
-                print!("{ch}");
+                out.push_str(ch);
             }
-            println!("\r");
+            out.push('\n');
         }
+        out
     }
 }
 
@@ -188,6 +193,52 @@ pub enum HgSsMapSpecialPermission {
     SignShelf,
     SignNothing,
     Unknown(u8),
+}
+
+impl HgSsMapSpecialPermission {
+    pub fn icon(&self) -> &'static str {
+        use HgSsMapSpecialPermission::*;
+        match self {
+            FreePassage => "  ",
+            Grass | HighGrass => ",,",
+            GrassMud | UnderGrassMud => ",~",
+            CaveEncounter => "..",
+            PlainsEncounter => ". ",
+            Surfing => "~~",
+            Waterfall => "~v",
+            WaterSplash => "~*",
+            GoDown => "vv",
+            Blocked => "XX",
+            StairsUp => "/^",
+            StairsDown => "/v",
+            JumpUp => "^^",
+            JumpDown => "vv",
+            RotateRight => " >",
+            RotateLeft => "< ",
+            RotateUp => " ^",
+            RotateDown => " v",
+            RockClimb => "RC",
+            DoorNoAnim | DoorOpening => "[]",
+            DoorJumpWarp => "[!",
+            ExitBuilding => "][",
+            ForceBike | RideBike => "BB",
+            OpenPc => "PC",
+            OpenMapSinnoh => "MP",
+            BattleWatch => "BW",
+            SnowWaist => "::",
+            SnowHead => ":^",
+            SnowLow => ":.",
+            MudWaist => "%%",
+            MudHead => "%^",
+            FootOnSand => "°°",
+            RideJumpLeft => "<^",
+            SignBookshelf => "SB",
+            SignTrashCan => "ST",
+            SignShelf => "SS",
+            SignNothing => "S?",
+            Unknown(_) => "??",
+        }
+    }
 }
 
 impl From<u8> for HgSsMapSpecialPermission {
