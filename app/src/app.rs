@@ -1,9 +1,12 @@
+use crate::ui::icons;
 use crate::ui::state::UiState;
 use crate::ui::tabs::{Tab, TabViewer};
+use crate::utils::file_picker::FilePicker;
 use crate::utils::task::Task;
 use eframe::{CreationContext, Frame, Storage};
-use egui::{CentralPanel, FontDefinitions, Ui};
+use egui::{CentralPanel, FontDefinitions, Panel, Ui};
 use egui_dock::DockState;
+use egui_notify::Toasts;
 use poke_nav::codec::common::rom::Rom;
 use strum::IntoEnumIterator;
 
@@ -13,6 +16,8 @@ pub struct PokeNav {
     ui_state: UiState,
     #[serde(skip, default)]
     loaded_rom: Task<Rom>,
+    #[serde(skip, default)]
+    toasts: Toasts,
 }
 
 impl Default for PokeNav {
@@ -21,6 +26,7 @@ impl Default for PokeNav {
             dock: DockState::new(vec![Tab::FileExplorer]),
             ui_state: Default::default(),
             loaded_rom: Default::default(),
+            toasts: Default::default(),
         }
     }
 }
@@ -43,6 +49,7 @@ impl PokeNav {
 impl eframe::App for PokeNav {
     fn ui(&mut self, ui: &mut Ui, _frame: &mut Frame) {
         self.render(ui);
+        self.ui_state.update(ui);
     }
 
     fn save(&mut self, storage: &mut dyn Storage) {
@@ -53,10 +60,13 @@ impl eframe::App for PokeNav {
 // Rendering
 impl PokeNav {
     fn render(&mut self, ui: &mut Ui) {
+        self.show_top_bar(ui);
+
         CentralPanel::default().show_inside(ui, |ui| {
             let mut viewer = TabViewer {
                 state: &mut self.ui_state,
                 loaded_rom: &mut self.loaded_rom,
+                toasts: &mut self.toasts,
             };
             egui_dock::DockArea::new(&mut self.dock)
                 .style(egui_dock::Style::from_egui(ui.style().as_ref()))
@@ -94,5 +104,42 @@ impl PokeNav {
         } else {
             self.dock.main_surface_mut().push_to_focused_leaf(tab);
         }
+    }
+}
+
+// Top bar
+impl PokeNav {
+    fn show_top_bar(&mut self, ui: &mut Ui) {
+        Panel::top("top_bar").show_inside(ui, |ui| {
+            ui.horizontal(|ui| {
+                ui.label("Poké-Nav");
+
+                ui.separator();
+
+                if ui
+                    .button(icons::FOLDER_OPEN)
+                    .on_hover_text("Load ROM")
+                    .clicked()
+                {
+                    FilePicker::pick_rom(&mut self.loaded_rom, ui);
+                }
+
+                if ui.button(icons::GEAR).on_hover_text("Settings").clicked() {
+                    self.open_tab(Tab::Settings);
+                }
+
+                if ui
+                    .button(icons::FILES)
+                    .on_hover_text("File Explorer")
+                    .clicked()
+                {
+                    self.open_tab(Tab::FileExplorer);
+                }
+
+                if ui.button(icons::INFO).on_hover_text("Rom Info").clicked() {
+                    self.open_tab(Tab::RomInfo);
+                }
+            });
+        });
     }
 }

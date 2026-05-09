@@ -145,17 +145,8 @@ impl NdsFileSystem {
     }
 
     fn print_dir(&self, current_dir_id: u16, prefix: String) {
-        let mut child_dirs: Vec<&NdsDirectory> = self
-            .directories
-            .iter()
-            .filter(|d| d.parent_dir_id == current_dir_id && d.id != current_dir_id)
-            .collect();
-
-        let mut child_files: Vec<&NdsFile> = self
-            .files
-            .iter()
-            .filter(|f| f.parent_dir_id == current_dir_id)
-            .collect();
+        let mut child_dirs: Vec<&NdsDirectory> = self.child_dirs(current_dir_id).collect();
+        let mut child_files: Vec<&NdsFile> = self.child_files(current_dir_id).collect();
 
         child_dirs.sort_by(|a, b| a.name.cmp(&b.name));
         child_files.sort_by(|a, b| a.name.cmp(&b.name));
@@ -244,6 +235,100 @@ impl NdsFileSystem {
             Some(NdsFileSystemEntry::Directory(d)) => Some(d),
             _ => None,
         }
+    }
+
+    pub fn child_dirs(&self, dir_id: u16) -> impl Iterator<Item = &NdsDirectory> {
+        self.directories
+            .iter()
+            .filter(move |d| d.parent_dir_id == dir_id && d.id != dir_id)
+    }
+
+    pub fn child_files(&self, dir_id: u16) -> impl Iterator<Item = &NdsFile> {
+        self.files.iter().filter(move |f| f.parent_dir_id == dir_id)
+    }
+}
+
+// Zipping
+#[cfg(feature = "zip")]
+impl NdsFileSystem {
+    pub fn to_zip(&self, expand_nested: bool) -> Result<Vec<u8>, zip::result::ZipError> {
+        self.zip_dir_by_id(ROOT_DIR_ID, expand_nested)
+    }
+
+    pub fn zip_dir_by_path(
+        &self,
+        path: impl Into<NdsPath>,
+        expand_nested: bool,
+    ) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
+        let path = path.into();
+        let dir = self
+            .get_dir(path.clone())
+            .ok_or_else(|| format!("Directory not found: {}", path))?;
+        self.zip_dir_by_id(dir.id, expand_nested)
+            .map_err(|e| e.into())
+    }
+
+    pub fn zip_dir_by_id(
+        &self,
+        dir_id: u16,
+        expand_nested: bool,
+    ) -> Result<Vec<u8>, zip::result::ZipError> {
+        let opts = zip::write::SimpleFileOptions::default()
+            .compression_method(zip::CompressionMethod::Deflated);
+        let but = std::io::Cursor::new(Vec::new());
+        let mut zip = zip::ZipWriter::new(but);
+
+        self.write_dir_to_zip(&mut zip, dir_id, String::new(), &opts, expand_nested)?;
+
+        let cursor = zip.finish()?;
+        Ok(cursor.into_inner())
+    }
+
+    fn write_dir_to_zip<W: std::io::Write + Seek>(
+        &self,
+        zip: &mut zip::ZipWriter<W>,
+        dir_id: u16,
+        prefix: String,
+        opts: &zip::write::SimpleFileOptions,
+        expand_nested: bool,
+    ) -> Result<(), zip::result::ZipError> {
+        use std::io::Write;
+
+        for file in self.child_files(dir_id) {
+            let path = if prefix.is_empty() {
+                file.name.clone()
+            } else {
+                format!("{}/{}", prefix, file.name)
+            };
+
+            if expand_nested && let Some(nested) = file.data.nested_fs() {
+                let narc_dir = if prefix.is_empty() {
+                    file.name.clone()
+                } else {
+                    format!("{}/{}", prefix, file.name)
+                };
+                zip.add_directory(&narc_dir, *opts)?;
+                nested.write_dir_to_zip(zip, ROOT_DIR_ID, narc_dir, opts, expand_nested)?;
+            } else {
+                let raw = file.data.raw()?;
+                zip.start_file(&path, *opts)?;
+                zip.write_all(&raw)?;
+            }
+        }
+
+        for dir in self.child_dirs(dir_id) {
+            let path = if prefix.is_empty() {
+                dir.name.clone()
+            } else {
+                format!("{}/{}", prefix, dir.name)
+            };
+
+            zip.add_directory(&path, *opts)?;
+
+            self.write_dir_to_zip(zip, dir.id, path, opts, expand_nested)?;
+        }
+
+        Ok(())
     }
 }
 

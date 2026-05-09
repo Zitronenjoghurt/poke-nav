@@ -1,3 +1,4 @@
+use crate::codec::nds::formats::narc::Narc;
 use crate::codec::nds::formats::{NdsFileFormat, ParsedNdsFile};
 use crate::codec::nds::fs::NdsFileSystem;
 use std::io::{Cursor, Write};
@@ -55,6 +56,16 @@ impl NdsFileData {
                 parsed: ParsedNdsFile::Narc(narc),
                 ..
             } => Some(&narc.fs),
+            _ => None,
+        }
+    }
+
+    pub fn narc(&self) -> Option<&Narc> {
+        match &self {
+            NdsFileData::Parsed {
+                parsed: ParsedNdsFile::Narc(narc),
+                ..
+            } => Some(narc),
             _ => None,
         }
     }

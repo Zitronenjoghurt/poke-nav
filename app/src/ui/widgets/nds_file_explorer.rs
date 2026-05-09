@@ -1,40 +1,56 @@
+use crate::ui::state::UiState;
+use crate::ui::widgets::nds_dir_actions::NdsDirActions;
 use crate::ui::widgets::nds_file_actions::NdsFileActions;
 use crate::ui::widgets::nds_fs_tree::NdsFsTree;
-use egui::{Response, Ui};
-use poke_nav::codec::nds::fs::path::NdsPath;
+use crate::ui::widgets::nds_path::NdsPathWidget;
+use egui::{Response, ScrollArea, Ui};
 use poke_nav::codec::nds::fs::{NdsFileSystem, NdsFileSystemEntry};
 
 pub struct NdsFileExplorer<'a> {
+    toasts: &'a mut egui_notify::Toasts,
     fs: &'a NdsFileSystem,
-    selected_path: &'a mut Option<NdsPath>,
+    state: &'a mut UiState,
 }
 
 impl<'a> NdsFileExplorer<'a> {
-    pub fn new(fs: &'a NdsFileSystem, selected_path: &'a mut Option<NdsPath>) -> Self {
-        Self { fs, selected_path }
+    pub fn new(
+        toasts: &'a mut egui_notify::Toasts,
+        fs: &'a NdsFileSystem,
+        state: &'a mut UiState,
+    ) -> Self {
+        Self { toasts, fs, state }
     }
 }
 
 impl<'a> egui::Widget for NdsFileExplorer<'a> {
     fn ui(self, ui: &mut Ui) -> Response {
         ui.vertical(|ui| {
-            if let Some(path) = &self.selected_path
+            if let Some(path) = &self.state.selected_file_explorer_path
                 && let Some(entry) = self.fs.get_entry(path.clone())
             {
-                match entry {
-                    NdsFileSystemEntry::File(file) => {
-                        NdsFileActions::new(file).ui(ui);
+                ui.vertical(|ui| {
+                    NdsPathWidget::new(path).ui(ui);
+                    match entry {
+                        NdsFileSystemEntry::File(file) => {
+                            NdsFileActions::new(file, self.toasts).ui(ui);
+                        }
+                        NdsFileSystemEntry::Directory(dir) => {
+                            NdsDirActions::new(self.fs, dir, self.toasts).ui(ui);
+                        }
                     }
-                    NdsFileSystemEntry::Directory(dir) => {}
-                }
+                });
+
+                ui.separator();
             }
 
-            ui.separator();
-
-            let tree_response = NdsFsTree::new("nds_fs_tree", self.fs).show(ui);
-            if let Some(path) = tree_response.selected_path {
-                *self.selected_path = Some(path.into());
-            };
+            ScrollArea::vertical()
+                .min_scrolled_width(ui.available_width())
+                .show(ui, |ui| {
+                    let tree_response = NdsFsTree::new("nds_fs_tree", self.fs).show(ui);
+                    if let Some(path) = tree_response.selected_path {
+                        self.state.selected_file_explorer_path = Some(path.into());
+                    };
+                });
         })
         .response
     }

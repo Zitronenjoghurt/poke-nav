@@ -4,11 +4,12 @@ use poke_nav::codec::nds::fs::file::NdsFile;
 
 pub struct NdsFileActions<'a> {
     file: &'a NdsFile,
+    toasts: &'a mut egui_notify::Toasts,
 }
 
 impl<'a> NdsFileActions<'a> {
-    pub fn new(file: &'a NdsFile) -> Self {
-        Self { file }
+    pub fn new(file: &'a NdsFile, toasts: &'a mut egui_notify::Toasts) -> Self {
+        Self { file, toasts }
     }
 }
 
@@ -27,11 +28,34 @@ impl<'a> egui::Widget for NdsFileActions<'a> {
                 } else {
                     self.file.name.clone()
                 };
-                let data = self.file.data.raw().unwrap();
-                FileSaver::new()
-                    .file_name(&name)
-                    .title("Dump File")
-                    .dispatch(data);
+                match self.file.data.raw() {
+                    Ok(data) => {
+                        FileSaver::new()
+                            .file_name(&name)
+                            .title("Dump File")
+                            .dispatch(data);
+                    }
+                    Err(err) => {
+                        self.toasts.error(err.to_string());
+                    }
+                }
+            }
+
+            if let Some(narc) = self.file.data.narc()
+                && ui.button("Dump (zipped)").clicked()
+            {
+                let name = format!("{}.zip", self.file.name);
+                match narc.fs.to_zip(false) {
+                    Ok(data) => {
+                        FileSaver::new()
+                            .file_name(&name)
+                            .title("Dump NARC as archive")
+                            .dispatch(data);
+                    }
+                    Err(err) => {
+                        self.toasts.error(err.to_string());
+                    }
+                }
             }
         })
         .response

@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-poke-nav = { workspace = true }
+poke-nav = { workspace = true, features = ["zip"] }
 anyhow = "1.0.102"
 eframe = { version = "0.34.2", default-features = false, features = ["persistence"] }
 egui = "0.34.2"

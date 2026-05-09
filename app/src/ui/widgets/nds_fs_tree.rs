@@ -17,7 +17,18 @@ impl<'a> NdsFsTree<'a> {
 
     pub fn show(self, ui: &mut Ui) -> NdsFsTreeResponse {
         let (response, actions) = TreeView::new(Id::new(self.id)).show(ui, |builder| {
-            build_dir(builder, self.fs, ROOT_DIR_ID, String::new())
+            let open = builder.node(
+                NodeBuilder::dir(String::new())
+                    .default_open(true)
+                    .icon(|ui| {
+                        ui.label(icons::FOLDER);
+                    })
+                    .label(""),
+            );
+            if open {
+                build_dir(builder, self.fs, ROOT_DIR_ID, String::new());
+            }
+            builder.close_dir();
         });
 
         let mut selected_path = None;
@@ -89,7 +100,7 @@ fn build_dir(
                     NodeBuilder::dir(path.clone())
                         .default_open(false)
                         .icon(|ui| {
-                            ui.label(icons::FILE_ZIP);
+                            ui.label(icons::FILE_ARCHIVE);
                         })
                         .label(&file.name),
                 );
@@ -125,7 +136,7 @@ fn build_dir(
 
 fn format_icon(parsed: &ParsedNdsFile) -> &'static str {
     match parsed.format() {
-        NdsFileFormat::Narc => icons::FILE_ZIP,
+        NdsFileFormat::Narc => icons::FILE_ARCHIVE,
         NdsFileFormat::Gen4Map => icons::MAP_TRIFOLD,
     }
 }

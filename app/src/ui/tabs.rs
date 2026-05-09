@@ -6,11 +6,13 @@ use strum_macros::EnumIter;
 
 mod file_explorer;
 mod map;
+mod rom_info;
 mod settings;
 
 pub struct TabViewer<'a> {
     pub state: &'a mut UiState,
     pub loaded_rom: &'a mut Task<Rom>,
+    pub toasts: &'a mut egui_notify::Toasts,
 }
 
 impl<'a> egui_dock::TabViewer for TabViewer<'a> {
@@ -24,6 +26,7 @@ impl<'a> egui_dock::TabViewer for TabViewer<'a> {
         match tab {
             Tab::FileExplorer => file_explorer::show(self, ui),
             Tab::Map => map::show(self, ui),
+            Tab::RomInfo => rom_info::show(self, ui),
             Tab::Settings => settings::show(self, ui),
         }
     }
@@ -41,6 +44,7 @@ impl<'a> egui_dock::TabViewer for TabViewer<'a> {
 pub enum Tab {
     FileExplorer,
     Map,
+    RomInfo,
     Settings,
 }
 
@@ -49,6 +53,7 @@ impl Tab {
         match self {
             Tab::FileExplorer => "File Explorer",
             Tab::Map => "Map",
+            Tab::RomInfo => "Rom Info",
             Tab::Settings => "Settings",
         }
     }
