@@ -1,6 +1,5 @@
 use crate::codec::common::fmt::format_bytes;
 use crate::codec::common::rom::RomReadError;
-use crate::codec::nds::formats::ParsedNdsFile;
 use crate::codec::nds::fs::dir::NdsDirectory;
 use crate::codec::nds::fs::file::{NdsFile, NdsFileData};
 use crate::codec::nds::fs::path::NdsPath;
@@ -8,11 +7,13 @@ use crate::codec::nds::rom::fat::{Fat, FatEntry};
 use crate::codec::nds::rom::fnt::{FntMainEntry, FntSubEntry};
 use crate::codec::nds::rom::NdsRomReadError;
 use binrw::{BinRead, BinReaderExt};
-use std::io::{Cursor, Read, Seek, SeekFrom};
+use std::io::{Read, Seek, SeekFrom};
 
 pub mod dir;
 pub mod file;
 pub mod path;
+
+pub const ROOT_DIR_ID: u16 = 0xF000;
 
 /// Source: https://problemkaputt.de/gbatek-ds-cartridge-nitrorom-and-nitroarc-file-systems.htm
 pub struct NdsFileSystem {
@@ -46,9 +47,9 @@ impl NdsFileSystem {
         let total_directories = root_entry.parent_id_or_count;
 
         directories.push(NdsDirectory {
-            id: 0xF000,
+            id: ROOT_DIR_ID,
             name: String::new(),
-            parent_dir_id: 0xF000,
+            parent_dir_id: ROOT_DIR_ID,
         });
 
         reader.seek(SeekFrom::Start(fnt_base))?;
@@ -60,7 +61,7 @@ impl NdsFileSystem {
             .map_err(|_| NdsRomReadError::FNTRead)?;
 
         for (i, main_entry) in main_table.iter().enumerate() {
-            let current_dir_id = 0xF000 + i as u16;
+            let current_dir_id = ROOT_DIR_ID + i as u16;
             let mut current_file_id = main_entry.first_file_id;
 
             reader.seek(SeekFrom::Start(
@@ -93,7 +94,7 @@ impl NdsFileSystem {
                     reader.seek(SeekFrom::Start(restore_pos))?;
 
                     let size = raw.len();
-                    let data = Self::try_parse(&raw);
+                    let data = NdsFileData::new(raw)?;
 
                     files.push(NdsFile {
                         id: current_file_id,
@@ -124,12 +125,12 @@ impl NdsFileSystem {
             reader.seek(SeekFrom::Start(restore_pos))?;
 
             let size = raw.len();
-            let data = Self::try_parse(&raw);
+            let data = NdsFileData::new(raw)?;
 
             files.push(NdsFile {
                 id: file_id,
                 name: format!("{:04}", idx),
-                parent_dir_id: 0xF000,
+                parent_dir_id: ROOT_DIR_ID,
                 size,
                 data,
             });
@@ -138,17 +139,9 @@ impl NdsFileSystem {
         Ok(Self { directories, files })
     }
 
-    fn try_parse(raw: &[u8]) -> NdsFileData {
-        let mut cursor = Cursor::new(raw);
-        match ParsedNdsFile::read(&mut cursor) {
-            Ok(parsed) => NdsFileData::Parsed(parsed),
-            Err(_) => NdsFileData::Raw(raw.to_vec()),
-        }
-    }
-
     pub fn print_tree(&self) {
         println!("/");
-        self.print_dir(0xF000, String::new());
+        self.print_dir(ROOT_DIR_ID, String::new());
     }
 
     fn print_dir(&self, current_dir_id: u16, prefix: String) {
@@ -194,32 +187,67 @@ impl NdsFileSystem {
         }
     }
 
-    pub fn get_file(&self, path: impl Into<NdsPath>) -> Option<&NdsFile> {
+    pub fn get_entry(&self, path: impl Into<NdsPath>) -> Option<NdsFileSystemEntry<'_>> {
         let path = path.into();
-
         if path.is_empty() {
-            return None;
+            return Some(NdsFileSystemEntry::Directory(&self.directories[0]));
         }
-
         let components: Vec<&str> = path.components().collect();
-        if components.is_empty() {
-            return None;
-        }
+        self.resolve(&components)
+    }
 
-        let (dir_components, file_name_slice) = components.split_at(components.len() - 1);
-        let file_name = file_name_slice[0];
+    fn resolve(&self, components: &[&str]) -> Option<NdsFileSystemEntry<'_>> {
+        let mut current_dir_id = ROOT_DIR_ID;
 
-        let mut current_dir_id = 0xF000;
-        for &component in dir_components {
-            let dir = self
-                .directories
-                .iter()
-                .find(|d| d.parent_dir_id == current_dir_id && d.name == component)?;
+        for (i, &name) in components.iter().enumerate() {
+            let rest = &components[i + 1..];
+
+            if let Some(file) = self.file_in(current_dir_id, name) {
+                return if rest.is_empty() {
+                    Some(NdsFileSystemEntry::File(file))
+                } else {
+                    file.data.nested_fs()?.resolve(rest)
+                };
+            }
+
+            let dir = self.dir_in(current_dir_id, name)?;
+            if rest.is_empty() {
+                return Some(NdsFileSystemEntry::Directory(dir));
+            }
             current_dir_id = dir.id;
         }
 
+        None
+    }
+
+    fn file_in(&self, dir_id: u16, name: &str) -> Option<&NdsFile> {
         self.files
             .iter()
-            .find(|f| f.parent_dir_id == current_dir_id && f.name == file_name)
+            .find(|f| f.parent_dir_id == dir_id && f.name == name)
     }
+
+    fn dir_in(&self, dir_id: u16, name: &str) -> Option<&NdsDirectory> {
+        self.directories
+            .iter()
+            .find(|d| d.parent_dir_id == dir_id && d.name == name)
+    }
+
+    pub fn get_file(&self, path: impl Into<NdsPath>) -> Option<&NdsFile> {
+        match self.get_entry(path) {
+            Some(NdsFileSystemEntry::File(f)) => Some(f),
+            _ => None,
+        }
+    }
+
+    pub fn get_dir(&self, path: impl Into<NdsPath>) -> Option<&NdsDirectory> {
+        match self.get_entry(path) {
+            Some(NdsFileSystemEntry::Directory(d)) => Some(d),
+            _ => None,
+        }
+    }
+}
+
+pub enum NdsFileSystemEntry<'a> {
+    Directory(&'a NdsDirectory),
+    File(&'a NdsFile),
 }

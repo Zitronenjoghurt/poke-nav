@@ -38,9 +38,9 @@ impl FilePicker {
         Some(PickedFile { name, data })
     }
 
-    pub fn into<T, F>(self, task: &mut Task<T>, ctx: &egui::Context, f: F)
+    pub fn dispatch<T, F>(self, task: &mut Task<T>, ctx: &egui::Context, f: F)
     where
-        T: Send + 'static,
+        T: NativeOnlySend + 'static,
         F: FnOnce(PickedFile) -> anyhow::Result<T> + NativeOnlySend + 'static,
     {
         task.start(ctx, async move { self.pick().await.map(f) });
@@ -52,7 +52,8 @@ impl FilePicker {
     pub fn pick_rom(task: &mut Task<Rom>, ui: &egui::Ui) {
         FilePicker::new()
             .filter("ROM", &["nds"])
-            .into(task, ui.ctx(), |file| {
+            .title("Pick a ROM file")
+            .dispatch(task, ui.ctx(), |file| {
                 let mut cursor = Cursor::new(file.data);
                 Rom::read(&mut cursor).context("Failed to parse ROM")
             });

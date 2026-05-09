@@ -1,4 +1,5 @@
 pub mod file_picker;
+pub mod file_saver;
 pub mod task;
 
 #[cfg(not(target_arch = "wasm32"))]

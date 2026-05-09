@@ -4,6 +4,7 @@ use egui::{Ui, WidgetText};
 use poke_nav::codec::common::rom::Rom;
 use strum_macros::EnumIter;
 
+mod file_explorer;
 mod map;
 mod settings;
 
@@ -21,6 +22,7 @@ impl<'a> egui_dock::TabViewer for TabViewer<'a> {
 
     fn ui(&mut self, ui: &mut Ui, tab: &mut Self::Tab) {
         match tab {
+            Tab::FileExplorer => file_explorer::show(self, ui),
             Tab::Map => map::show(self, ui),
             Tab::Settings => settings::show(self, ui),
         }
@@ -37,6 +39,7 @@ impl<'a> egui_dock::TabViewer for TabViewer<'a> {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize, EnumIter)]
 pub enum Tab {
+    FileExplorer,
     Map,
     Settings,
 }
@@ -44,6 +47,7 @@ pub enum Tab {
 impl Tab {
     pub fn title(&self) -> &'static str {
         match self {
+            Tab::FileExplorer => "File Explorer",
             Tab::Map => "Map",
             Tab::Settings => "Settings",
         }

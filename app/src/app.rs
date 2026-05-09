@@ -18,7 +18,7 @@ pub struct PokeNav {
 impl Default for PokeNav {
     fn default() -> Self {
         Self {
-            dock: DockState::new(vec![Tab::Map]),
+            dock: DockState::new(vec![Tab::FileExplorer]),
             ui_state: Default::default(),
             loaded_rom: Default::default(),
         }

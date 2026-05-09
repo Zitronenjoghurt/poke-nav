@@ -25,6 +25,17 @@ impl Rom {
             Self::Nds(_) => Platform::Nds,
         }
     }
+
+    pub fn nds(&self) -> Option<&NdsRom> {
+        match self {
+            Self::Nds(rom) => Some(rom),
+            _ => None,
+        }
+    }
+
+    pub fn is_nds(&self) -> bool {
+        matches!(self, Self::Nds(_))
+    }
 }
 
 #[derive(Debug, thiserror::Error)]

@@ -1,23 +1,41 @@
+use crate::codec::common::rom::RomReadError;
 use binrw::{binrw, BinRead, BinReaderExt};
-use std::io::{Read, Seek};
+use std::io::{Read, Seek, SeekFrom};
 
 /// Source: https://projectpokemon.org/home/docs/gen-4/map-structure-r29/
-pub struct HgSsMap {
-    pub header: HgSsMapHeader,
-    pub permissions: HgSsMapPermissions,
-    pub objects: Vec<HgSsMapObject>,
+pub struct Gen4Map {
+    pub header: Gen4MapHeader,
+    pub permissions: Gen4MapPermissions,
+    pub objects: Vec<Gen4MapObject>,
     pub nsbmd: Vec<u8>,
     pub bdhc: Vec<u8>,
 }
 
-impl HgSsMap {
-    pub fn read<R: Read + Seek>(reader: &mut R) -> Result<Self, binrw::Error> {
-        let header = HgSsMapHeader::read(reader)?;
+impl Gen4Map {
+    pub fn probe<R: Read + Seek>(reader: &mut R) -> Result<bool, RomReadError> {
+        let pos = reader.stream_position()?;
+        let result: Result<bool, std::io::Error> = (|| {
+            let mut buf = [0u8; 8];
+            reader.read_exact(&mut buf)?;
+            let perm_size = u32::from_le_bytes(buf[0..4].try_into().unwrap());
+            let obj_size = u32::from_le_bytes(buf[4..8].try_into().unwrap());
+            Ok(perm_size == 0x800 && obj_size % 48 == 0)
+        })();
+        reader.seek(SeekFrom::Start(pos))?;
+        match result {
+            Ok(v) => Ok(v),
+            Err(e) if e.kind() == std::io::ErrorKind::UnexpectedEof => Ok(false),
+            Err(e) => Err(e.into()),
+        }
+    }
 
-        let permissions = HgSsMapPermissions::read(reader)?;
+    pub fn read<R: Read + Seek>(reader: &mut R) -> Result<Self, binrw::Error> {
+        let header = Gen4MapHeader::read(reader)?;
+
+        let permissions = Gen4MapPermissions::read(reader)?;
 
         let num_objects = header.objects_size / 48;
-        let objects: Vec<HgSsMapObject> = reader.read_le_args(binrw::VecArgs {
+        let objects: Vec<Gen4MapObject> = reader.read_le_args(binrw::VecArgs {
             count: num_objects as usize,
             inner: (),
         })?;
@@ -40,7 +58,7 @@ impl HgSsMap {
 
 #[binrw]
 #[brw(little)]
-pub struct HgSsMapHeader {
+pub struct Gen4MapHeader {
     /// Always 0x800
     pub permission_size: u32,
     pub objects_size: u32,
@@ -51,15 +69,15 @@ pub struct HgSsMapHeader {
 
 #[binrw]
 #[brw(little)]
-pub struct HgSsMapPermissions {
+pub struct Gen4MapPermissions {
     /// 32×32 grid, ordered left-to-right, bottom-to-top
     #[br(count = 32 * 32)]
-    pub tiles: Vec<HgSsTilePermission>,
+    pub tiles: Vec<Gen4TilePermission>,
 }
 
-impl HgSsMapPermissions {
+impl Gen4MapPermissions {
     pub fn print_grid(&self) {
-        use SpecialPermission::*;
+        use Gen4MapSpecialPermission::*;
         for row in (0..32).rev() {
             for col in 0..32 {
                 let tile = &self.tiles[row * 32 + col];
@@ -89,19 +107,19 @@ impl HgSsMapPermissions {
 #[binrw]
 #[brw(little)]
 #[derive(Debug, Clone)]
-pub struct HgSsTilePermission {
+pub struct Gen4TilePermission {
     /// Special behavior — surfable, tall grass, ledge, warp, etc.
     pub special: u8,
     /// 0x0 = passable, 0x4 = ignore special byte, 0x8 = solid wall
     pub movement: u8,
 }
 
-impl HgSsTilePermission {
-    pub fn special(&self) -> SpecialPermission {
+impl Gen4TilePermission {
+    pub fn special(&self) -> Gen4MapSpecialPermission {
         if self.movement == 0x04 {
-            SpecialPermission::FreePassage
+            Gen4MapSpecialPermission::FreePassage
         } else {
-            SpecialPermission::from(self.special)
+            Gen4MapSpecialPermission::from(self.special)
         }
     }
 }
@@ -109,7 +127,7 @@ impl HgSsTilePermission {
 #[binrw]
 #[brw(little)]
 #[derive(Debug, Clone)]
-pub struct HgSsMapObject {
+pub struct Gen4MapObject {
     pub object_id: u32,
     pub y_frac: u16,
     pub y_coord: u16,
@@ -125,7 +143,7 @@ pub struct HgSsMapObject {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum SpecialPermission {
+pub enum Gen4MapSpecialPermission {
     FreePassage,
     Grass,
     HighGrass,
@@ -170,9 +188,9 @@ pub enum SpecialPermission {
     Unknown(u8),
 }
 
-impl From<u8> for SpecialPermission {
+impl From<u8> for Gen4MapSpecialPermission {
     fn from(val: u8) -> Self {
-        use SpecialPermission::*;
+        use Gen4MapSpecialPermission::*;
         match val {
             0x00
             | 0x04..=0x09
