@@ -1,3 +1,4 @@
+use crate::codec::nds::formats::hgss_map::HgSsMap;
 use crate::codec::nds::formats::narc::Narc;
 use crate::codec::nds::formats::{NdsFileFormat, ParsedNdsFile};
 use crate::codec::nds::fs::NdsFileSystem;
@@ -9,6 +10,17 @@ pub struct NdsFile {
     pub parent_dir_id: u16,
     pub size: usize,
     pub data: NdsFileData,
+}
+
+impl NdsFile {
+    pub fn name_with_ext_fallback(&self) -> String {
+        if !self.name.contains('.') {
+            let ext = self.data.format().map(|f| f.extension()).unwrap_or("bin");
+            format!("{}.{ext}", self.name)
+        } else {
+            self.name.clone()
+        }
+    }
 }
 
 pub enum NdsFileData {
@@ -66,6 +78,16 @@ impl NdsFileData {
                 parsed: ParsedNdsFile::Narc(narc),
                 ..
             } => Some(narc),
+            _ => None,
+        }
+    }
+
+    pub fn gen4map(&self) -> Option<&HgSsMap> {
+        match self {
+            NdsFileData::Parsed {
+                parsed: ParsedNdsFile::HgSsMap(map),
+                ..
+            } => Some(map),
             _ => None,
         }
     }

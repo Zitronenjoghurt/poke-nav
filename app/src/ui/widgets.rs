@@ -1,6 +1,7 @@
 pub mod nds_dir_actions;
 pub mod nds_file_actions;
 pub mod nds_file_explorer;
+pub mod nds_file_info;
 pub mod nds_fs_tree;
 pub mod nds_path;
 pub mod reset_slider;

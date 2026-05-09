@@ -5,6 +5,7 @@ use poke_nav::codec::common::rom::Rom;
 use strum_macros::EnumIter;
 
 mod file_explorer;
+mod file_info;
 mod map;
 mod rom_info;
 mod settings;
@@ -25,6 +26,7 @@ impl<'a> egui_dock::TabViewer for TabViewer<'a> {
     fn ui(&mut self, ui: &mut Ui, tab: &mut Self::Tab) {
         match tab {
             Tab::FileExplorer => file_explorer::show(self, ui),
+            Tab::FileInfo => file_info::show(self, ui),
             Tab::Map => map::show(self, ui),
             Tab::RomInfo => rom_info::show(self, ui),
             Tab::Settings => settings::show(self, ui),
@@ -43,6 +45,7 @@ impl<'a> egui_dock::TabViewer for TabViewer<'a> {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize, EnumIter)]
 pub enum Tab {
     FileExplorer,
+    FileInfo,
     Map,
     RomInfo,
     Settings,
@@ -52,6 +55,7 @@ impl Tab {
     pub fn title(&self) -> &'static str {
         match self {
             Tab::FileExplorer => "File Explorer",
+            Tab::FileInfo => "File Info",
             Tab::Map => "Map",
             Tab::RomInfo => "Rom Info",
             Tab::Settings => "Settings",

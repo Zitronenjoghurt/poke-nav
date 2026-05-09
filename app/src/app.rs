@@ -128,13 +128,16 @@ impl PokeNav {
                     self.open_tab(Tab::Settings);
                 }
 
-                if ui
-                    .button(icons::FILES)
-                    .on_hover_text("File Explorer")
-                    .clicked()
-                {
-                    self.open_tab(Tab::FileExplorer);
-                }
+                ui.menu_button(icons::FILES, |ui| {
+                    if ui.button("File Explorer").clicked() {
+                        self.open_tab(Tab::FileExplorer);
+                    }
+                    if ui.button("File Info").clicked() {
+                        self.open_tab(Tab::FileInfo);
+                    }
+                })
+                .response
+                .on_hover_text("Files");
 
                 if ui.button(icons::INFO).on_hover_text("Rom Info").clicked() {
                     self.open_tab(Tab::RomInfo);

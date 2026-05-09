@@ -137,6 +137,6 @@ fn build_dir(
 fn format_icon(parsed: &ParsedNdsFile) -> &'static str {
     match parsed.format() {
         NdsFileFormat::Narc => icons::FILE_ARCHIVE,
-        NdsFileFormat::Gen4Map => icons::MAP_TRIFOLD,
+        NdsFileFormat::HgSsMap => icons::MAP_TRIFOLD,
     }
 }

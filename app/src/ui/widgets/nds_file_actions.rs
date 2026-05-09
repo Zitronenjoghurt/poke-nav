@@ -57,6 +57,16 @@ impl<'a> egui::Widget for NdsFileActions<'a> {
                     }
                 }
             }
+
+            if let Some(gen4map) = self.file.data.gen4map()
+                && ui.button("Dump NSMBD").clicked()
+            {
+                let name = format!("{}.nsmbd", self.file.name);
+                FileSaver::new()
+                    .file_name(&name)
+                    .title("Dump NSMBD file")
+                    .dispatch(gen4map.nsbmd.clone());
+            }
         })
         .response
     }

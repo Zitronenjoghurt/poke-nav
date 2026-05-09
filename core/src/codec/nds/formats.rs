@@ -2,27 +2,45 @@ use crate::codec::common::rom::RomReadError;
 use crate::codec::nds::rom::NdsRomReadError;
 use std::io::{Read, Seek};
 
-pub mod gen4_map;
+pub mod hgss_map;
 pub mod narc;
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
 pub enum NdsFileFormat {
     Narc,
-    Gen4Map,
+    HgSsMap,
 }
 
 impl NdsFileFormat {
     pub fn extension(&self) -> &'static str {
         match self {
             NdsFileFormat::Narc => "narc",
-            NdsFileFormat::Gen4Map => "gen4map",
+            NdsFileFormat::HgSsMap => "hgssmap",
+        }
+    }
+
+    pub fn full_name(&self) -> &'static str {
+        match self {
+            NdsFileFormat::Narc => "Nitro Archive Container",
+            NdsFileFormat::HgSsMap => "HeartGold/SoulSilver Map Data",
+        }
+    }
+
+    pub fn explanation(&self) -> &'static str {
+        match self {
+            NdsFileFormat::Narc => {
+                "A Nitro Archive containing multiple sub-files, used to bundle related assets together."
+            }
+            NdsFileFormat::HgSsMap => {
+                "A map file containing tile permissions, 3D objects, an NSBMD model, and terrain data."
+            }
         }
     }
 }
 
 pub enum ParsedNdsFile {
     Narc(narc::Narc),
-    Gen4Map(gen4_map::Gen4Map),
+    HgSsMap(hgss_map::HgSsMap),
 }
 
 impl ParsedNdsFile {
@@ -30,8 +48,8 @@ impl ParsedNdsFile {
         if narc::Narc::probe(reader)? {
             return Ok(ParsedNdsFile::Narc(narc::Narc::read(reader)?));
         };
-        if gen4_map::Gen4Map::probe(reader)? {
-            return Ok(ParsedNdsFile::Gen4Map(gen4_map::Gen4Map::read(reader)?));
+        if hgss_map::HgSsMap::probe(reader)? {
+            return Ok(ParsedNdsFile::HgSsMap(hgss_map::HgSsMap::read(reader)?));
         }
         Err(NdsRomReadError::UnknownFileFormat.into())
     }
@@ -39,7 +57,7 @@ impl ParsedNdsFile {
     pub fn format(&self) -> NdsFileFormat {
         match self {
             ParsedNdsFile::Narc(_) => NdsFileFormat::Narc,
-            ParsedNdsFile::Gen4Map(_) => NdsFileFormat::Gen4Map,
+            ParsedNdsFile::HgSsMap(_) => NdsFileFormat::HgSsMap,
         }
     }
 }
