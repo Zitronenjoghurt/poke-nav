@@ -1,6 +1,6 @@
-use crate::codec::common::rom::RomReadError;
-use crate::codec::nds::fs::NdsFileSystem;
-use crate::codec::nds::rom::fat::FatEntry;
+use crate::nds::fs::NdsFileSystem;
+use crate::nds::rom::fat::FatEntry;
+use crate::rom::RomReadError;
 use binrw::{binrw, BinRead};
 use std::io::{Read, Seek, SeekFrom};
 

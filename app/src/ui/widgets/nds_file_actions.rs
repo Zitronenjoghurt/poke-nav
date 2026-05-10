@@ -1,6 +1,6 @@
 use crate::utils::file_saver::FileSaver;
 use egui::Response;
-use poke_nav::codec::nds::fs::file::NdsFile;
+use poke_nav::nds::fs::file::NdsFile;
 
 pub struct NdsFileActions<'a> {
     file: &'a NdsFile,

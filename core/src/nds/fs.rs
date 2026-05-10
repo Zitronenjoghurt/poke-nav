@@ -1,11 +1,11 @@
-use crate::codec::common::fmt::format_bytes;
-use crate::codec::common::rom::RomReadError;
-use crate::codec::nds::fs::dir::NdsDirectory;
-use crate::codec::nds::fs::file::{NdsFile, NdsFileData};
-use crate::codec::nds::fs::path::NdsPath;
-use crate::codec::nds::rom::fat::{Fat, FatEntry};
-use crate::codec::nds::rom::fnt::{FntMainEntry, FntSubEntry};
-use crate::codec::nds::rom::NdsRomReadError;
+use crate::fmt::format_bytes;
+use crate::nds::fs::dir::NdsDirectory;
+use crate::nds::fs::file::{NdsFile, NdsFileData};
+use crate::nds::fs::path::NdsPath;
+use crate::nds::rom::fat::{Fat, FatEntry};
+use crate::nds::rom::fnt::{FntMainEntry, FntSubEntry};
+use crate::nds::rom::NdsRomReadError;
+use crate::rom::RomReadError;
 use binrw::{BinRead, BinReaderExt};
 use std::io::{Read, Seek, SeekFrom};
 

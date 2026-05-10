@@ -1,5 +1,5 @@
-use crate::codec::common::fmt::format_grid;
-use crate::codec::common::rom::RomReadError;
+use crate::fmt::format_grid;
+use crate::rom::RomReadError;
 use binrw::{binrw, BinRead, BinReaderExt};
 use std::io::{Read, Seek, SeekFrom};
 

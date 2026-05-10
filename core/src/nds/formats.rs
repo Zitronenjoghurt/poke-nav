@@ -1,5 +1,5 @@
-use crate::codec::common::rom::RomReadError;
-use crate::codec::nds::rom::NdsRomReadError;
+use crate::nds::rom::NdsRomReadError;
+use crate::rom::RomReadError;
 use std::io::{Read, Seek};
 
 pub mod gen4_map_data;

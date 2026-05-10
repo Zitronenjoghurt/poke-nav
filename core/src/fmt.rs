@@ -12,14 +12,23 @@ pub fn format_bytes(size: usize) -> String {
     }
 }
 
+pub fn format_bytes_long(size: usize) -> String {
+    format!("{} ({} bytes)", format_bytes(size), size)
+}
+
 pub fn format_grid<D: Display>(grid: &[D], width: usize) -> String {
     let height = grid.len() / width;
-    let col_width = grid.iter().map(|v| v.to_string().len()).max().unwrap_or(1);
-    let row_label_width = height.to_string().len();
+    let col_width = grid
+        .iter()
+        .map(|v| v.to_string().len())
+        .max()
+        .unwrap_or(1)
+        .max(3);
+    let row_label_width = height.to_string().len().max("Y\\X".len());
 
     let header = format!(
         "{:row_label_width$} {}",
-        "",
+        "Y\\X",
         (0..width)
             .map(|x| format!("{x:>col_width$}"))
             .collect::<Vec<_>>()

@@ -1,5 +1,7 @@
-use crate::codec::common::rom::{RomReadError, RomTrait};
-use crate::codec::nds::fs;
+use crate::compression::blz::blz_decompress;
+use crate::compression::CompressionError;
+use crate::nds::fs;
+use crate::rom::{RomReadError, RomTrait};
 use binrw::BinRead;
 use std::io::{Read, Seek, SeekFrom};
 
@@ -9,6 +11,7 @@ pub mod header;
 
 pub struct NdsRom {
     pub header: header::NdsHeader,
+    pub compressed_arm9_size: Option<usize>,
     pub arm9_binary: Vec<u8>,
     pub arm7_binary: Vec<u8>,
     pub fs: fs::NdsFileSystem,
@@ -41,6 +44,14 @@ impl RomTrait for NdsRom {
         reader
             .read_exact(&mut arm9_binary)
             .map_err(|_| NdsRomReadError::Arm9BinaryLocation)?;
+        let compressed_arm9_size = arm9_binary.len();
+
+        let arm9_binary = match blz_decompress(&arm9_binary) {
+            Ok(decompressed) => decompressed,
+            Err(CompressionError::NotCompressed) => arm9_binary,
+            Err(e) => return Err(NdsRomReadError::Arm9Decompression(e).into()),
+        };
+        let decompressed_arm9_size = arm9_binary.len();
 
         let mut arm7_binary = vec![0u8; header.arm7_size as usize];
         reader.seek(SeekFrom::Start(header.arm7_offset as u64))?;
@@ -57,6 +68,11 @@ impl RomTrait for NdsRom {
 
         Ok(Self {
             header,
+            compressed_arm9_size: if compressed_arm9_size != decompressed_arm9_size {
+                Some(compressed_arm9_size)
+            } else {
+                None
+            },
             arm9_binary,
             arm7_binary,
             fs,
@@ -69,9 +85,7 @@ impl RomTrait for NdsRom {
 }
 
 impl NdsRom {
-    pub fn find_hgss_header_table_offset(&self) -> Option<usize> {
-        // ToDo: Do this on decompressed binary
-
+    pub fn find_hgss_map_header_table_offset(&self) -> Option<usize> {
         let pattern: [u8; 10] = [
             0xFF, // wildPokemon = 255
             0x00, // areaDataID = 0
@@ -105,6 +119,8 @@ pub enum NdsRomReadError {
     Arm7BinaryLocation,
     #[error("Invalid arm9 binary location")]
     Arm9BinaryLocation,
+    #[error("Failed to decompress arm9 binary: {0}")]
+    Arm9Decompression(CompressionError),
     #[error("Failed to read the FNT")]
     FNTRead,
     #[error("Unknown file format")]

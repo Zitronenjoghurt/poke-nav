@@ -1,4 +1,4 @@
-use crate::codec::nds::fs::path::NdsPath;
+use crate::nds::fs::path::NdsPath;
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub enum HgSsKnownFile {

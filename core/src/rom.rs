@@ -1,5 +1,5 @@
-use crate::codec::common::platform::Platform;
-use crate::codec::nds::rom::{NdsRom, NdsRomReadError};
+use crate::nds::rom::{NdsRom, NdsRomReadError};
+use crate::platform::Platform;
 use std::io::{Read, Seek};
 
 pub enum Rom {

@@ -4,7 +4,7 @@ use crate::ui::widgets::nds_file_actions::NdsFileActions;
 use crate::ui::widgets::nds_fs_tree::NdsFsTree;
 use crate::ui::widgets::nds_path::NdsPathWidget;
 use egui::{Response, ScrollArea, Ui};
-use poke_nav::codec::nds::fs::{NdsFileSystem, NdsFileSystemEntry};
+use poke_nav::nds::fs::{NdsFileSystem, NdsFileSystemEntry};
 
 pub struct NdsFileExplorer<'a> {
     toasts: &'a mut egui_notify::Toasts,

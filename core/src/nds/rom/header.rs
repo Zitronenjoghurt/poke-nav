@@ -1,4 +1,4 @@
-use crate::codec::common::rw::zero_padded_string::ZeroPaddedString;
+use crate::rw::zero_padded_string::ZeroPaddedString;
 use binrw::binrw;
 
 #[binrw]

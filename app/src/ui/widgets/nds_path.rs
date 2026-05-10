@@ -1,5 +1,5 @@
 use egui::Widget;
-use poke_nav::codec::nds::fs::path::NdsPath;
+use poke_nav::nds::fs::path::NdsPath;
 
 pub struct NdsPathWidget<'a> {
     path: &'a NdsPath,

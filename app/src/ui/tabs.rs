@@ -1,7 +1,7 @@
 use crate::ui::state::UiState;
 use crate::utils::task::Task;
 use egui::{Ui, WidgetText};
-use poke_nav::codec::common::rom::Rom;
+use poke_nav::rom::Rom;
 use strum_macros::EnumIter;
 
 mod file_explorer;

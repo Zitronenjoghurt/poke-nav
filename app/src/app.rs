@@ -7,7 +7,7 @@ use eframe::{CreationContext, Frame, Storage};
 use egui::{CentralPanel, FontDefinitions, Panel, Ui};
 use egui_dock::DockState;
 use egui_notify::Toasts;
-use poke_nav::codec::common::rom::Rom;
+use poke_nav::rom::Rom;
 use strum::IntoEnumIterator;
 
 #[derive(serde::Serialize, serde::Deserialize)]
@@ -147,7 +147,7 @@ impl PokeNav {
                     && let Some(rom) = self.loaded_rom.get()
                     && let Rom::Nds(nds) = rom
                 {
-                    nds.find_hgss_header_table_offset();
+                    nds.find_hgss_map_header_table_offset();
                 }
             });
         });

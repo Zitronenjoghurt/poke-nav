@@ -1,8 +1,8 @@
 use crate::ui::widgets::text_grid_frame::TextGridFrame;
 use egui::{Grid, Response, Ui, Widget};
-use poke_nav::codec::common::fmt::format_bytes;
-use poke_nav::codec::nds::formats::ParsedNdsFile;
-use poke_nav::codec::nds::fs::file::{NdsFile, NdsFileData};
+use poke_nav::fmt::format_bytes_long;
+use poke_nav::nds::formats::ParsedNdsFile;
+use poke_nav::nds::fs::file::{NdsFile, NdsFileData};
 
 pub struct NdsFileInfo<'a> {
     file: &'a NdsFile,
@@ -99,16 +99,20 @@ impl<'a> NdsFileInfo<'a> {
         };
         match parsed {
             ParsedNdsFile::Gen4MapData(map) => {
-                TextGridFrame::new(&map.permissions.format_grid()).ui(ui);
+                TextGridFrame::new(
+                    "nds_file_info_gen_4_map_permissions",
+                    &map.permissions.format_grid(),
+                )
+                .ui(ui);
             }
             ParsedNdsFile::Gen4MapMatrix(mat) => {
                 ui.label("File IDs");
-                TextGridFrame::new(&mat.format_file_ids()).ui(ui);
+                TextGridFrame::new("nds_file_info_gen_4_map_files", &mat.format_file_ids()).ui(ui);
 
                 if let Some(headers) = mat.format_header_ids() {
                     ui.separator();
                     ui.label("Header IDs");
-                    TextGridFrame::new(&headers).ui(ui);
+                    TextGridFrame::new("nds_file_info_gen_4_map_headers", &headers).ui(ui);
                 }
             }
             _ => {}
@@ -127,11 +131,7 @@ impl<'a> Widget for NdsFileInfo<'a> {
                     ui.end_row();
 
                     ui.label("Size");
-                    ui.label(format!(
-                        "{} ({} bytes)",
-                        format_bytes(self.file.size),
-                        self.file.size,
-                    ));
+                    ui.label(format_bytes_long(self.file.size));
                     ui.end_row();
 
                     if let Some(format) = self.file.data.format() {

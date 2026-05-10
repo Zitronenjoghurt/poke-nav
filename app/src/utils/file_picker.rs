@@ -1,7 +1,7 @@
 use crate::utils::task::Task;
 use crate::utils::NativeOnlySend;
 use anyhow::Context;
-use poke_nav::codec::common::rom::Rom;
+use poke_nav::rom::Rom;
 use rfd::AsyncFileDialog;
 use std::io::Cursor;
 

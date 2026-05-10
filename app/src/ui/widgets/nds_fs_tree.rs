@@ -1,9 +1,9 @@
 use crate::ui::icons;
 use egui::{Id, Response, Ui};
 use egui_ltreeview::{NodeBuilder, TreeView};
-use poke_nav::codec::nds::formats::{NdsFileFormat, ParsedNdsFile};
-use poke_nav::codec::nds::fs::file::NdsFileData;
-use poke_nav::codec::nds::fs::{NdsFileSystem, ROOT_DIR_ID};
+use poke_nav::nds::formats::{NdsFileFormat, ParsedNdsFile};
+use poke_nav::nds::fs::file::NdsFileData;
+use poke_nav::nds::fs::{NdsFileSystem, ROOT_DIR_ID};
 
 pub struct NdsFsTree<'a> {
     id: &'a str,
