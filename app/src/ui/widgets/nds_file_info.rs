@@ -60,9 +60,9 @@ impl<'a> NdsFileInfo<'a> {
                 ui.label(map.header.bdhc_size.to_string());
                 ui.end_row();
 
-                ui.label("Unknown section size");
+                ui.label("Background sound section size");
                 ui.label(
-                    map.unknown_data
+                    map.background_sound_section
                         .as_ref()
                         .map(|v| v.len().to_string())
                         .unwrap_or("0".to_string()),
@@ -82,12 +82,12 @@ impl<'a> NdsFileInfo<'a> {
                 ui.label(matrix.header.global_map_height.to_string());
                 ui.end_row();
 
-                ui.label("2-Byte-Layer flag (???)");
-                ui.label(matrix.header.has_extra_u16_layer.to_string());
+                ui.label("Headers section flag");
+                ui.label(matrix.header.headers_section_present.to_string());
                 ui.end_row();
 
-                ui.label("1-Byte-Layer flag (???)");
-                ui.label(matrix.header.has_extra_u8_layer.to_string());
+                ui.label("Altitudes section flag");
+                ui.label(matrix.header.altitudes_section_present.to_string());
                 ui.end_row();
             }
         }
@@ -102,7 +102,14 @@ impl<'a> NdsFileInfo<'a> {
                 TextGridFrame::new(&map.permissions.format_grid()).ui(ui);
             }
             ParsedNdsFile::Gen4MapMatrix(mat) => {
-                TextGridFrame::new(&mat.format_grid()).ui(ui);
+                ui.label("File IDs");
+                TextGridFrame::new(&mat.format_file_ids()).ui(ui);
+
+                if let Some(headers) = mat.format_header_ids() {
+                    ui.separator();
+                    ui.label("Header IDs");
+                    TextGridFrame::new(&headers).ui(ui);
+                }
             }
             _ => {}
         }

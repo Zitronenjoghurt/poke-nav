@@ -1,16 +1,16 @@
+use crate::codec::common::fmt::format_grid;
 use crate::codec::common::rom::RomReadError;
 use binrw::{binrw, BinRead, BinReaderExt};
 use std::io::{Read, Seek, SeekFrom};
 
-/// Source: https://projectpokemon.org/home/docs/gen-4/map-matrix-r28/
+/// Sources:
+/// - https://projectpokemon.org/home/docs/gen-4/map-matrix-r28/
+/// - https://github.com/DS-Pokemon-Rom-Editor/DSPRE/blob/27cc51d0429279f1450eccf35a45f8d8f616254d/DS_Map/ROMFiles/GameMatrix.cs
 pub struct Gen4MapMatrix {
     pub header: Gen4MapMatrixHeader,
-    pub map_indices: Vec<u16>,
-    // Speculation, but those layers exist in some files
-    // The HG/SS first matrix file called "map" and the one for the safari zone
-    pub extra_u16_layer: Option<Vec<u16>>,
-    // Speculation
-    pub extra_u8_layer: Option<Vec<u8>>,
+    pub files: Vec<u16>,
+    pub headers: Option<Vec<u16>>,
+    pub altitudes: Option<Vec<u8>>,
 }
 
 impl Gen4MapMatrix {
@@ -44,15 +44,13 @@ impl Gen4MapMatrix {
         let header = Gen4MapMatrixHeader::read(reader)?;
         let count = header.global_map_width as usize * header.global_map_height as usize;
 
-        let map_indices: Vec<u16> = reader.read_le_args(binrw::VecArgs { count, inner: () })?;
-
-        let extra_u16_layer = if header.has_extra_u16_layer == 1 {
+        let headers = if header.headers_section_present == 1 {
             Some(reader.read_le_args::<Vec<u16>>(binrw::VecArgs { count, inner: () })?)
         } else {
             None
         };
 
-        let extra_u8_layer = if header.has_extra_u8_layer == 1 {
+        let altitudes = if header.altitudes_section_present == 1 {
             let mut buf = vec![0u8; count];
             reader.read_exact(&mut buf)?;
             Some(buf)
@@ -60,34 +58,24 @@ impl Gen4MapMatrix {
             None
         };
 
+        let files: Vec<u16> = reader.read_le_args(binrw::VecArgs { count, inner: () })?;
+
         Ok(Self {
             header,
-            map_indices,
-            extra_u16_layer,
-            extra_u8_layer,
+            files,
+            headers,
+            altitudes,
         })
     }
 
-    pub fn format_grid(&self) -> String {
-        let w = self.header.global_map_width as usize;
-        let h = self.header.global_map_height as usize;
+    pub fn format_file_ids(&self) -> String {
+        format_grid(&self.files, self.header.global_map_width as usize)
+    }
 
-        let col_width = self
-            .map_indices
-            .iter()
-            .map(|v| v.to_string().len())
-            .max()
-            .unwrap_or(1);
-
-        (0..h)
-            .map(|y| {
-                (0..w)
-                    .map(|x| format!("{:>width$}", self.map_indices[y * w + x], width = col_width))
-                    .collect::<Vec<_>>()
-                    .join(" ")
-            })
-            .collect::<Vec<_>>()
-            .join("\n")
+    pub fn format_header_ids(&self) -> Option<String> {
+        self.headers
+            .as_ref()
+            .map(|headers| format_grid(headers, self.header.global_map_width as usize))
     }
 }
 
@@ -96,10 +84,8 @@ impl Gen4MapMatrix {
 pub struct Gen4MapMatrixHeader {
     pub global_map_width: u8,
     pub global_map_height: u8,
-    // Speculation
-    pub has_extra_u16_layer: u8,
-    // Speculation
-    pub has_extra_u8_layer: u8,
+    pub headers_section_present: u8,
+    pub altitudes_section_present: u8,
     #[bw(calc = prefix_name.len() as u8)]
     pub prefix_name_length: u8,
     #[br(count = prefix_name_length, map = |bytes: Vec<u8>| String::from_utf8_lossy(&bytes).into_owned())]

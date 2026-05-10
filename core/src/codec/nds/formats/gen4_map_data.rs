@@ -3,11 +3,13 @@ use binrw::{binrw, BinRead, BinReaderExt};
 use std::io::{Read, Seek, SeekFrom};
 
 /// Sources:
+/// - https://github.com/DS-Pokemon-Rom-Editor/DSPRE
 /// - https://hirotdk.neocities.org/FileSpecs#Maps
 /// - https://projectpokemon.org/home/docs/gen-4/map-structure-r29/
 pub struct Gen4MapData {
     pub header: Gen4MapDataHeader,
-    pub unknown_data: Option<Vec<u8>>,
+    /// HG/SS-only
+    pub background_sound_section: Option<Vec<u8>>,
     pub permissions: Gen4MapPermissions,
     pub objects: Vec<Gen4MapObject>,
     pub nsbmd: Vec<u8>,
@@ -35,11 +37,9 @@ impl Gen4MapData {
     pub fn read<R: Read + Seek>(reader: &mut R) -> Result<Self, binrw::Error> {
         let header = Gen4MapDataHeader::read(reader)?;
 
-        // Found through my own experimentation
-        // What hirotdk called an "unknown size" might be a 2 byte magic (0x1234) followed by a 2 byte size field
-        // The size determines the size of the following section (unknown purpose) which is HG/SS-specific
-        let unknown_magic: u16 = reader.read_le()?;
-        let unknown_data = if unknown_magic == 0x1234 {
+        // HG/SS-specific background sound magic
+        let background_sound_section_magic: u16 = reader.read_le()?;
+        let background_sound_section = if background_sound_section_magic == 0x1234 {
             let size: u16 = reader.read_le()?;
             let mut buf = vec![0u8; size as usize];
             reader.read_exact(&mut buf)?;
@@ -65,7 +65,7 @@ impl Gen4MapData {
 
         Ok(Self {
             header,
-            unknown_data,
+            background_sound_section,
             permissions,
             objects,
             nsbmd,
@@ -87,7 +87,7 @@ pub struct Gen4MapDataHeader {
 #[binrw]
 #[brw(little)]
 pub struct Gen4MapPermissions {
-    /// 32×32 grid, ordered left-to-right, bottom-to-top
+    /// 32×32 grid, ordered left-to-right, top-to-bottom
     #[br(count = 32 * 32)]
     pub tiles: Vec<Gen4TilePermission>,
 }
@@ -95,13 +95,13 @@ pub struct Gen4MapPermissions {
 impl Gen4MapPermissions {
     pub fn format_grid(&self) -> String {
         let mut out = String::new();
-        for row in (0..32).rev() {
+        for row in 0..32 {
             for col in 0..32 {
                 let tile = &self.tiles[row * 32 + col];
-                let ch = if tile.movement == 0x08 || tile.movement == 0x80 {
+                let ch = if tile.collision() == Gen4MapCollision::Blocked {
                     "██"
                 } else {
-                    tile.special().icon()
+                    tile.special_behavior().icon()
                 };
                 out.push_str(ch);
             }
@@ -115,18 +115,50 @@ impl Gen4MapPermissions {
 #[brw(little)]
 #[derive(Debug, Clone)]
 pub struct Gen4TilePermission {
-    /// Special behavior — surfable, tall grass, ledge, warp, etc.
+    /// First Byte: Special behavior — surfable, tall grass, ledge, warp, etc.
     pub special: u8,
-    /// 0x0 = passable, 0x4 = ignore special byte, 0x8 = solid wall
+    /// Second Byte: Collision and terrain sound/effect.
     pub movement: u8,
 }
 
 impl Gen4TilePermission {
-    pub fn special(&self) -> Gen4MapSpecialPermission {
-        if self.movement == 0x04 {
-            Gen4MapSpecialPermission::FreePassage
-        } else {
-            Gen4MapSpecialPermission::from(self.special)
+    pub fn special_behavior(&self) -> Gen4MapSpecialPermission {
+        Gen4MapSpecialPermission::from(self.special)
+    }
+
+    pub fn collision(&self) -> Gen4MapCollision {
+        Gen4MapCollision::from(self.movement)
+    }
+}
+
+/// Source: https://github.com/DS-Pokemon-Rom-Editor/DSPRE/blob/27cc51d0429279f1450eccf35a45f8d8f616254d/DS_Map/Resources/PokeDatabase.cs#L653
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Gen4MapCollision {
+    Walkable,     // 0x00
+    Snow,         // 0x01
+    Leaves,       // 0x02
+    Grass,        // 0x04
+    StairsAndIce, // 0x06
+    Metal,        // 0x07
+    CavernFloor,  // 0x0A
+    Wood,         // 0x0D
+    Blocked,      // 0x80
+    Unknown(u8),
+}
+
+impl From<u8> for Gen4MapCollision {
+    fn from(val: u8) -> Self {
+        match val {
+            0x00 => Gen4MapCollision::Walkable,
+            0x01 => Gen4MapCollision::Snow,
+            0x02 => Gen4MapCollision::Leaves,
+            0x04 => Gen4MapCollision::Grass,
+            0x06 => Gen4MapCollision::StairsAndIce,
+            0x07 => Gen4MapCollision::Metal,
+            0x0A => Gen4MapCollision::CavernFloor,
+            0x0D => Gen4MapCollision::Wood,
+            0x80 => Gen4MapCollision::Blocked,
+            other => Gen4MapCollision::Unknown(other),
         }
     }
 }
