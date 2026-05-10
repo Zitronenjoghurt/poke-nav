@@ -1,4 +1,4 @@
-use crate::codec::nds::formats::hgss_map::HgSsMap;
+use crate::codec::nds::formats::gen4_map_data::Gen4MapData;
 use crate::codec::nds::formats::narc::Narc;
 use crate::codec::nds::formats::{NdsFileFormat, ParsedNdsFile};
 use crate::codec::nds::fs::NdsFileSystem;
@@ -82,10 +82,10 @@ impl NdsFileData {
         }
     }
 
-    pub fn gen4map(&self) -> Option<&HgSsMap> {
+    pub fn gen4map(&self) -> Option<&Gen4MapData> {
         match self {
             NdsFileData::Parsed {
-                parsed: ParsedNdsFile::HgSsMap(map),
+                parsed: ParsedNdsFile::Gen4MapData(map),
                 ..
             } => Some(map),
             _ => None,

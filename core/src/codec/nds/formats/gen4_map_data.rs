@@ -2,17 +2,19 @@ use crate::codec::common::rom::RomReadError;
 use binrw::{binrw, BinRead, BinReaderExt};
 use std::io::{Read, Seek, SeekFrom};
 
-/// Source: https://hirotdk.neocities.org/FileSpecs#Maps
-pub struct HgSsMap {
-    pub header: HgSsMapHeader,
+/// Sources:
+/// - https://hirotdk.neocities.org/FileSpecs#Maps
+/// - https://projectpokemon.org/home/docs/gen-4/map-structure-r29/
+pub struct Gen4MapData {
+    pub header: Gen4MapDataHeader,
     pub unknown_data: Option<Vec<u8>>,
-    pub permissions: HgSsMapPermissions,
-    pub objects: Vec<HgSsMapObject>,
+    pub permissions: Gen4MapPermissions,
+    pub objects: Vec<Gen4MapObject>,
     pub nsbmd: Vec<u8>,
     pub bdhc: Vec<u8>,
 }
 
-impl HgSsMap {
+impl Gen4MapData {
     pub fn probe<R: Read + Seek>(reader: &mut R) -> Result<bool, RomReadError> {
         let pos = reader.stream_position()?;
         let result: Result<bool, std::io::Error> = (|| {
@@ -31,11 +33,11 @@ impl HgSsMap {
     }
 
     pub fn read<R: Read + Seek>(reader: &mut R) -> Result<Self, binrw::Error> {
-        let header = HgSsMapHeader::read(reader)?;
+        let header = Gen4MapDataHeader::read(reader)?;
 
         // Found through my own experimentation
         // What hirotdk called an "unknown size" might be a 2 byte magic (0x1234) followed by a 2 byte size field
-        // The size determines the size of the following section (of unknown purpose)
+        // The size determines the size of the following section (unknown purpose) which is HG/SS-specific
         let unknown_magic: u16 = reader.read_le()?;
         let unknown_data = if unknown_magic == 0x1234 {
             let size: u16 = reader.read_le()?;
@@ -47,10 +49,10 @@ impl HgSsMap {
             None
         };
 
-        let permissions = HgSsMapPermissions::read(reader)?;
+        let permissions = Gen4MapPermissions::read(reader)?;
 
         let num_objects = header.objects_size / 48;
-        let objects: Vec<HgSsMapObject> = reader.read_le_args(binrw::VecArgs {
+        let objects: Vec<Gen4MapObject> = reader.read_le_args(binrw::VecArgs {
             count: num_objects as usize,
             inner: (),
         })?;
@@ -74,7 +76,7 @@ impl HgSsMap {
 
 #[binrw]
 #[brw(little)]
-pub struct HgSsMapHeader {
+pub struct Gen4MapDataHeader {
     /// Always 0x800
     pub permission_size: u32,
     pub objects_size: u32,
@@ -84,14 +86,14 @@ pub struct HgSsMapHeader {
 
 #[binrw]
 #[brw(little)]
-pub struct HgSsMapPermissions {
+pub struct Gen4MapPermissions {
     /// 32×32 grid, ordered left-to-right, bottom-to-top
     #[br(count = 32 * 32)]
-    pub tiles: Vec<HgSsTilePermission>,
+    pub tiles: Vec<Gen4TilePermission>,
 }
 
-impl HgSsMapPermissions {
-    pub fn to_grid_string(&self) -> String {
+impl Gen4MapPermissions {
+    pub fn format_grid(&self) -> String {
         let mut out = String::new();
         for row in (0..32).rev() {
             for col in 0..32 {
@@ -112,19 +114,19 @@ impl HgSsMapPermissions {
 #[binrw]
 #[brw(little)]
 #[derive(Debug, Clone)]
-pub struct HgSsTilePermission {
+pub struct Gen4TilePermission {
     /// Special behavior — surfable, tall grass, ledge, warp, etc.
     pub special: u8,
     /// 0x0 = passable, 0x4 = ignore special byte, 0x8 = solid wall
     pub movement: u8,
 }
 
-impl HgSsTilePermission {
-    pub fn special(&self) -> HgSsMapSpecialPermission {
+impl Gen4TilePermission {
+    pub fn special(&self) -> Gen4MapSpecialPermission {
         if self.movement == 0x04 {
-            HgSsMapSpecialPermission::FreePassage
+            Gen4MapSpecialPermission::FreePassage
         } else {
-            HgSsMapSpecialPermission::from(self.special)
+            Gen4MapSpecialPermission::from(self.special)
         }
     }
 }
@@ -132,7 +134,7 @@ impl HgSsTilePermission {
 #[binrw]
 #[brw(little)]
 #[derive(Debug, Clone)]
-pub struct HgSsMapObject {
+pub struct Gen4MapObject {
     pub object_id: u32,     // 0x00,
     pub y_frac: u16,        // 0x04
     pub y_coord: u16,       // 0x06
@@ -148,9 +150,7 @@ pub struct HgSsMapObject {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-/// Source: https://projectpokemon.org/home/docs/gen-4/map-structure-r29/
-/// !NOTE: These special permissions might only be correct for the sinnoh games
-pub enum HgSsMapSpecialPermission {
+pub enum Gen4MapSpecialPermission {
     FreePassage,
     Grass,
     HighGrass,
@@ -195,9 +195,9 @@ pub enum HgSsMapSpecialPermission {
     Unknown(u8),
 }
 
-impl HgSsMapSpecialPermission {
+impl Gen4MapSpecialPermission {
     pub fn icon(&self) -> &'static str {
-        use HgSsMapSpecialPermission::*;
+        use Gen4MapSpecialPermission::*;
         match self {
             FreePassage => "  ",
             Grass | HighGrass => ",,",
@@ -241,9 +241,9 @@ impl HgSsMapSpecialPermission {
     }
 }
 
-impl From<u8> for HgSsMapSpecialPermission {
+impl From<u8> for Gen4MapSpecialPermission {
     fn from(val: u8) -> Self {
-        use HgSsMapSpecialPermission::*;
+        use Gen4MapSpecialPermission::*;
         match val {
             0x00
             | 0x04..=0x09

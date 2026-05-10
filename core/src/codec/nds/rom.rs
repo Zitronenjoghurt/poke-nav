@@ -68,6 +68,37 @@ impl RomTrait for NdsRom {
     }
 }
 
+impl NdsRom {
+    pub fn find_hgss_header_table_offset(&self) -> Option<usize> {
+        // ToDo: Do this on decompressed binary
+
+        let pattern: [u8; 10] = [
+            0xFF, // wildPokemon = 255
+            0x00, // areaDataID = 0
+            0x0F, 0x00, // coords packed (unknown0=15, worldmapX=0, worldmapY=0)
+            0x00, 0x00, // matrixID = 0
+            0x8B, 0x00, // scriptFileID = 139
+            0x8F, 0x01, // levelScriptID = 399
+        ];
+
+        let offset = self
+            .arm9_binary
+            .windows(pattern.len())
+            .position(|w| w == pattern)?;
+
+        if offset + 48 <= self.arm9_binary.len()
+            && self.arm9_binary[offset + 24] == 0xFF
+            && self.arm9_binary[offset + 25] == 0x00
+        {
+            println!("Found HGSS header table at ARM9 offset: 0x{:X}", offset);
+            Some(offset)
+        } else {
+            println!("Pattern found at 0x{:X} but sanity check failed", offset);
+            None
+        }
+    }
+}
+
 #[derive(Debug, thiserror::Error)]
 pub enum NdsRomReadError {
     #[error("Invalid arm7 binary location")]

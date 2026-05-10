@@ -22,7 +22,7 @@ impl<'a> NdsDirActions<'a> {
 impl<'a> egui::Widget for NdsDirActions<'a> {
     fn ui(self, ui: &mut egui::Ui) -> Response {
         ui.horizontal(|ui| {
-            if ui.button("Dump (zipped)").clicked() {
+            if ui.button("Dump as archive").clicked() {
                 let dir_name = if self.dir.name.is_empty() {
                     "archive"
                 } else {

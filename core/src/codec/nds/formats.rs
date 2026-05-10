@@ -2,27 +2,31 @@ use crate::codec::common::rom::RomReadError;
 use crate::codec::nds::rom::NdsRomReadError;
 use std::io::{Read, Seek};
 
-pub mod hgss_map;
+pub mod gen4_map_data;
+pub mod gen4_map_matrix;
 pub mod narc;
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
 pub enum NdsFileFormat {
     Narc,
-    HgSsMap,
+    Gen4MapData,
+    Gen4MapMatrix,
 }
 
 impl NdsFileFormat {
     pub fn extension(&self) -> &'static str {
         match self {
             NdsFileFormat::Narc => "narc",
-            NdsFileFormat::HgSsMap => "hgssmap",
+            NdsFileFormat::Gen4MapData => "gen4mapdat",
+            NdsFileFormat::Gen4MapMatrix => "gen4mapmat",
         }
     }
 
     pub fn full_name(&self) -> &'static str {
         match self {
             NdsFileFormat::Narc => "Nitro Archive Container",
-            NdsFileFormat::HgSsMap => "HeartGold/SoulSilver Map Data",
+            NdsFileFormat::Gen4MapData => "Pokémon Generation 4 Map Data",
+            NdsFileFormat::Gen4MapMatrix => "Pokémon Generation 4 Map Matrix",
         }
     }
 
@@ -31,8 +35,11 @@ impl NdsFileFormat {
             NdsFileFormat::Narc => {
                 "A Nitro Archive containing multiple sub-files, used to bundle related assets together."
             }
-            NdsFileFormat::HgSsMap => {
+            NdsFileFormat::Gen4MapData => {
                 "A map file containing tile permissions, 3D objects, an NSBMD model, and terrain data."
+            }
+            NdsFileFormat::Gen4MapMatrix => {
+                "A map file for associating the rendered map to the map data."
             }
         }
     }
@@ -40,7 +47,8 @@ impl NdsFileFormat {
 
 pub enum ParsedNdsFile {
     Narc(narc::Narc),
-    HgSsMap(hgss_map::HgSsMap),
+    Gen4MapData(gen4_map_data::Gen4MapData),
+    Gen4MapMatrix(gen4_map_matrix::Gen4MapMatrix),
 }
 
 impl ParsedNdsFile {
@@ -48,8 +56,15 @@ impl ParsedNdsFile {
         if narc::Narc::probe(reader)? {
             return Ok(ParsedNdsFile::Narc(narc::Narc::read(reader)?));
         };
-        if hgss_map::HgSsMap::probe(reader)? {
-            return Ok(ParsedNdsFile::HgSsMap(hgss_map::HgSsMap::read(reader)?));
+        if gen4_map_data::Gen4MapData::probe(reader)? {
+            return Ok(ParsedNdsFile::Gen4MapData(
+                gen4_map_data::Gen4MapData::read(reader)?,
+            ));
+        }
+        if gen4_map_matrix::Gen4MapMatrix::probe(reader)? {
+            return Ok(ParsedNdsFile::Gen4MapMatrix(
+                gen4_map_matrix::Gen4MapMatrix::read(reader)?,
+            ));
         }
         Err(NdsRomReadError::UnknownFileFormat.into())
     }
@@ -57,7 +72,8 @@ impl ParsedNdsFile {
     pub fn format(&self) -> NdsFileFormat {
         match self {
             ParsedNdsFile::Narc(_) => NdsFileFormat::Narc,
-            ParsedNdsFile::HgSsMap(_) => NdsFileFormat::HgSsMap,
+            ParsedNdsFile::Gen4MapData(_) => NdsFileFormat::Gen4MapData,
+            ParsedNdsFile::Gen4MapMatrix(_) => NdsFileFormat::Gen4MapMatrix,
         }
     }
 }

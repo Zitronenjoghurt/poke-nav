@@ -7,3 +7,4 @@ pub mod nds_path;
 pub mod reset_slider;
 pub mod rom_info;
 pub mod settings;
+pub mod text_grid_frame;

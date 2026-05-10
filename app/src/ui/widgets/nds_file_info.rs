@@ -1,3 +1,4 @@
+use crate::ui::widgets::text_grid_frame::TextGridFrame;
 use egui::{Grid, Response, Ui, Widget};
 use poke_nav::codec::common::fmt::format_bytes;
 use poke_nav::codec::nds::formats::ParsedNdsFile;
@@ -38,7 +39,7 @@ impl<'a> NdsFileInfo<'a> {
                 ui.label(narc.header.num_chunks.to_string());
                 ui.end_row();
             }
-            ParsedNdsFile::HgSsMap(map) => {
+            ParsedNdsFile::Gen4MapData(map) => {
                 ui.label("Permission size");
                 ui.label(map.header.permission_size.to_string());
                 ui.end_row();
@@ -68,6 +69,27 @@ impl<'a> NdsFileInfo<'a> {
                 );
                 ui.end_row();
             }
+            ParsedNdsFile::Gen4MapMatrix(matrix) => {
+                ui.label("Map prefix");
+                ui.label(&matrix.header.prefix_name);
+                ui.end_row();
+
+                ui.label("Map width");
+                ui.label(matrix.header.global_map_width.to_string());
+                ui.end_row();
+
+                ui.label("Map height");
+                ui.label(matrix.header.global_map_height.to_string());
+                ui.end_row();
+
+                ui.label("2-Byte-Layer flag (???)");
+                ui.label(matrix.header.has_extra_u16_layer.to_string());
+                ui.end_row();
+
+                ui.label("1-Byte-Layer flag (???)");
+                ui.label(matrix.header.has_extra_u8_layer.to_string());
+                ui.end_row();
+            }
         }
     }
 
@@ -76,17 +98,11 @@ impl<'a> NdsFileInfo<'a> {
             return;
         };
         match parsed {
-            ParsedNdsFile::HgSsMap(map) => {
-                egui::Frame::new()
-                    .fill(ui.visuals().extreme_bg_color)
-                    .inner_margin(4.0)
-                    .corner_radius(4.0)
-                    .show(ui, |ui| {
-                        ui.monospace(
-                            egui::RichText::new(map.permissions.to_grid_string())
-                                .color(ui.visuals().strong_text_color()),
-                        );
-                    });
+            ParsedNdsFile::Gen4MapData(map) => {
+                TextGridFrame::new(&map.permissions.format_grid()).ui(ui);
+            }
+            ParsedNdsFile::Gen4MapMatrix(mat) => {
+                TextGridFrame::new(&mat.format_grid()).ui(ui);
             }
             _ => {}
         }
@@ -104,7 +120,11 @@ impl<'a> Widget for NdsFileInfo<'a> {
                     ui.end_row();
 
                     ui.label("Size");
-                    ui.label(format_bytes(self.file.size));
+                    ui.label(format!(
+                        "{} ({} bytes)",
+                        format_bytes(self.file.size),
+                        self.file.size,
+                    ));
                     ui.end_row();
 
                     if let Some(format) = self.file.data.format() {
