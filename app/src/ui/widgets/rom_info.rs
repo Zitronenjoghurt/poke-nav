@@ -1,6 +1,7 @@
+use crate::ui::widgets::hgss_map_headers::HgSsMapHeadersWidget;
 use crate::utils::file_picker::FilePicker;
 use crate::utils::task::{Task, TaskUi};
-use egui::{Grid, Response, Ui, Widget};
+use egui::{CollapsingHeader, Grid, Response, Ui, Widget};
 use poke_nav::fmt::format_bytes_long;
 use poke_nav::rom::Rom;
 
@@ -25,9 +26,8 @@ impl Widget for RomInfo<'_> {
                 r
             }
             TaskUi::Done(rom) => {
-                Grid::new("rom_info_grid")
-                    .num_columns(2)
-                    .show(ui, |ui| {
+                ui.vertical(|ui| {
+                    Grid::new("rom_info_grid").num_columns(2).show(ui, |ui| {
                         ui.label("Platform");
                         ui.label(rom.platform().to_string());
                         ui.end_row();
@@ -67,8 +67,19 @@ impl Widget for RomInfo<'_> {
                             ui.label(format_bytes_long(nds.arm7_binary.len()));
                             ui.end_row();
                         }
-                    })
-                    .response
+                    });
+
+                    ui.separator();
+
+                    if let Some(nds) = rom.nds()
+                        && let Some(hgss) = nds.hgss_rom()
+                    {
+                        CollapsingHeader::new("Map Headers").show(ui, |ui| {
+                            HgSsMapHeadersWidget::new(&hgss).ui(ui);
+                        });
+                    }
+                })
+                .response
             }
             TaskUi::Handled(r) => r,
         }

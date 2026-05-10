@@ -1,3 +1,4 @@
+pub mod hgss_map_headers;
 pub mod nds_dir_actions;
 pub mod nds_file_actions;
 pub mod nds_file_explorer;

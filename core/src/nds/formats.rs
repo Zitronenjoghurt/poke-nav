@@ -4,7 +4,7 @@ use std::io::{Read, Seek};
 
 pub mod gen4_map_data;
 pub mod gen4_map_matrix;
-mod hgss_map_header;
+pub mod hgss_map_header;
 pub mod narc;
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]

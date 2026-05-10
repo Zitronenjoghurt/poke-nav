@@ -1,6 +1,9 @@
+use crate::nds::formats::hgss_map_header::HGSSMapHeader;
 use crate::nds::fs::path::NdsPath;
 use crate::nds::games::{CommonFile, NdsGame};
 use crate::nds::rom::NdsRom;
+use binrw::BinRead;
+use std::io::Cursor;
 
 pub struct HgSsRom<'a> {
     pub rom: &'a NdsRom,
@@ -40,6 +43,8 @@ impl HgSsFile {
 }
 
 impl<'a> HgSsRom<'a> {
+    pub const MAP_HEADER_TABLE_LENGTH: usize = 540;
+
     pub fn try_from(rom: &'a NdsRom) -> Option<Self> {
         let game = match NdsGame::detect(rom) {
             NdsGame::HeartGold => HgSsGame::HeartGold,
@@ -73,5 +78,16 @@ impl<'a> HgSsRom<'a> {
         } else {
             None
         }
+    }
+
+    pub fn read_map_headers(&self) -> Vec<HGSSMapHeader> {
+        let Some(offset) = self.find_map_header_table_offset() else {
+            return vec![];
+        };
+        let data = &self.rom.arm9_binary[offset..];
+        let mut cursor = Cursor::new(data);
+        (0..Self::MAP_HEADER_TABLE_LENGTH)
+            .map_while(|_| HGSSMapHeader::read_le(&mut cursor).ok())
+            .collect()
     }
 }

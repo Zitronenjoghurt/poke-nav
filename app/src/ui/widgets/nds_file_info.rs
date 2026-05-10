@@ -1,5 +1,5 @@
 use crate::ui::widgets::text_grid_frame::TextGridFrame;
-use egui::{Grid, Response, Ui, Widget};
+use egui::{CollapsingHeader, Grid, Response, Ui, Widget};
 use poke_nav::fmt::format_bytes_long;
 use poke_nav::nds::formats::ParsedNdsFile;
 use poke_nav::nds::fs::file::{NdsFile, NdsFileData};
@@ -106,13 +106,15 @@ impl<'a> NdsFileInfo<'a> {
                 .ui(ui);
             }
             ParsedNdsFile::Gen4MapMatrix(mat) => {
-                ui.label("File IDs");
-                TextGridFrame::new("nds_file_info_gen_4_map_files", &mat.format_file_ids()).ui(ui);
+                CollapsingHeader::new("File IDs").show(ui, |ui| {
+                    TextGridFrame::new("nds_file_info_gen_4_map_files", &mat.format_file_ids())
+                        .ui(ui);
+                });
 
                 if let Some(headers) = mat.format_header_ids() {
-                    ui.separator();
-                    ui.label("Header IDs");
-                    TextGridFrame::new("nds_file_info_gen_4_map_headers", &headers).ui(ui);
+                    CollapsingHeader::new("Header IDs").show(ui, |ui| {
+                        TextGridFrame::new("nds_file_info_gen_4_map_headers", &headers).ui(ui);
+                    });
                 }
             }
             _ => {}
