@@ -142,13 +142,6 @@ impl PokeNav {
                 if ui.button(icons::INFO).on_hover_text("Rom Info").clicked() {
                     self.open_tab(Tab::RomInfo);
                 }
-
-                if ui.button("Map header").clicked()
-                    && let Some(rom) = self.loaded_rom.get()
-                    && let Rom::Nds(nds) = rom
-                {
-                    nds.find_hgss_map_header_table_offset();
-                }
             });
         });
     }

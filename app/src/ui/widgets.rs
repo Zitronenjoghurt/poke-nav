@@ -5,6 +5,7 @@ pub mod nds_file_info;
 pub mod nds_fs_tree;
 pub mod nds_path;
 pub mod reset_slider;
+pub mod rom_actions;
 pub mod rom_info;
 pub mod settings;
 pub mod text_grid_frame;

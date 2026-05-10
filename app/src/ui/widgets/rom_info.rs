@@ -32,11 +32,15 @@ impl Widget for RomInfo<'_> {
                         ui.label(rom.platform().to_string());
                         ui.end_row();
 
-                        ui.label("Name");
+                        ui.label("Game Name");
                         ui.label(rom.name());
                         ui.end_row();
 
                         if let Some(nds) = rom.nds() {
+                            ui.label("Game Code");
+                            ui.label(nds.header.game_code.as_ref());
+                            ui.end_row();
+
                             if let Some(compressed_arm9_size) = nds.compressed_arm9_size {
                                 ui.label("Compressed arm9 binary size");
                                 ui.label(format_bytes_long(compressed_arm9_size));

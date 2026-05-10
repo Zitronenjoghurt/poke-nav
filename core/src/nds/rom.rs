@@ -1,6 +1,9 @@
 use crate::compression::blz::blz_decompress;
 use crate::compression::CompressionError;
 use crate::nds::fs;
+use crate::nds::games::dpp::DppRom;
+use crate::nds::games::hgss::HgSsRom;
+use crate::nds::games::{NdsGame, NdsGameRom};
 use crate::rom::{RomReadError, RomTrait};
 use binrw::BinRead;
 use std::io::{Read, Seek, SeekFrom};
@@ -85,31 +88,20 @@ impl RomTrait for NdsRom {
 }
 
 impl NdsRom {
-    pub fn find_hgss_map_header_table_offset(&self) -> Option<usize> {
-        let pattern: [u8; 10] = [
-            0xFF, // wildPokemon = 255
-            0x00, // areaDataID = 0
-            0x0F, 0x00, // coords packed (unknown0=15, worldmapX=0, worldmapY=0)
-            0x00, 0x00, // matrixID = 0
-            0x8B, 0x00, // scriptFileID = 139
-            0x8F, 0x01, // levelScriptID = 399
-        ];
+    pub fn game(&self) -> NdsGame {
+        NdsGame::detect(self)
+    }
 
-        let offset = self
-            .arm9_binary
-            .windows(pattern.len())
-            .position(|w| w == pattern)?;
+    pub fn game_rom(&'_ self) -> Option<NdsGameRom<'_>> {
+        NdsGameRom::try_from(self)
+    }
 
-        if offset + 48 <= self.arm9_binary.len()
-            && self.arm9_binary[offset + 24] == 0xFF
-            && self.arm9_binary[offset + 25] == 0x00
-        {
-            println!("Found HGSS header table at ARM9 offset: 0x{:X}", offset);
-            Some(offset)
-        } else {
-            println!("Pattern found at 0x{:X} but sanity check failed", offset);
-            None
-        }
+    pub fn dpp_rom(&'_ self) -> Option<DppRom<'_>> {
+        DppRom::try_from(self)
+    }
+
+    pub fn hgss_rom(&'_ self) -> Option<HgSsRom<'_>> {
+        HgSsRom::try_from(self)
     }
 }
 
