@@ -1,6 +1,10 @@
 use crate::ui::widgets::text_grid_frame::TextGridFrame;
 use egui::{CollapsingHeader, Grid, Response, Ui, Widget};
+use egui_extras::{Column, TableBuilder};
 use poke_nav::fmt::format_bytes_long;
+use poke_nav::platform::nds::formats::nstex::palette::NsPalette;
+use poke_nav::platform::nds::formats::nstex::texture::NsTexture;
+use poke_nav::platform::nds::formats::nstex::Nstex;
 use poke_nav::platform::nds::formats::ParsedNdsFile;
 use poke_nav::platform::nds::fs::file::{NdsFile, NdsFileData};
 
@@ -38,6 +42,12 @@ impl<'a> NdsFileInfo<'a> {
                 ui.label("Chunk count");
                 ui.label(narc.header.num_chunks.to_string());
                 ui.end_row();
+            }
+            ParsedNdsFile::Nsbtx(nsbtx) => {
+                self.nstex_info(ui, &nsbtx.texture);
+            }
+            ParsedNdsFile::Nstex(nstex) => {
+                self.nstex_info(ui, nstex);
             }
             ParsedNdsFile::Gen4MapData(map) => {
                 ui.label("Permission size");
@@ -105,6 +115,12 @@ impl<'a> NdsFileInfo<'a> {
                 )
                 .ui(ui);
             }
+            ParsedNdsFile::Nsbtx(nsbtx) => {
+                self.nstex_vis(ui, &nsbtx.texture);
+            }
+            ParsedNdsFile::Nstex(nstex) => {
+                self.nstex_vis(ui, nstex);
+            }
             ParsedNdsFile::Gen4MapMatrix(mat) => {
                 CollapsingHeader::new("File IDs").show(ui, |ui| {
                     TextGridFrame::new("nds_file_info_gen_4_map_files", &mat.format_file_ids())
@@ -119,6 +135,134 @@ impl<'a> NdsFileInfo<'a> {
             }
             _ => {}
         }
+    }
+
+    fn nstex_info(&self, ui: &mut Ui, nstex: &Nstex) {
+        ui.label("Texture chunk size");
+        ui.label(nstex.header.chunk_size.to_string());
+        ui.end_row();
+
+        ui.label("Texture data size");
+        ui.label(nstex.header.texture_data_size().to_string());
+        ui.end_row();
+
+        ui.label("Compressed texture data size");
+        ui.label(nstex.header.compressed_texture_data_size().to_string());
+        ui.end_row();
+
+        ui.label("Palette data size");
+        ui.label(nstex.header.palette_data_size().to_string());
+        ui.end_row();
+    }
+
+    fn nstex_vis(&self, ui: &mut Ui, nstex: &Nstex) {
+        CollapsingHeader::new("Texture Dictionary").show(ui, |ui| {
+            let mut textures: Vec<&NsTexture> = nstex.textures.iter().collect();
+            textures.sort_by_key(|t| &t.name);
+
+            TableBuilder::new(ui)
+                .striped(true)
+                .resizable(true)
+                .cell_layout(egui::Layout::left_to_right(egui::Align::Center))
+                .column(Column::auto())
+                .column(Column::auto())
+                .column(Column::auto())
+                .column(Column::auto())
+                .column(Column::auto())
+                .column(Column::auto())
+                .column(Column::auto())
+                .column(Column::remainder())
+                .min_scrolled_height(0.0)
+                .header(20.0, |mut header| {
+                    header.col(|ui| {
+                        ui.strong("Name");
+                    });
+                    header.col(|ui| {
+                        ui.strong("Offset");
+                    });
+                    header.col(|ui| {
+                        ui.strong("Width");
+                    });
+                    header.col(|ui| {
+                        ui.strong("Height");
+                    });
+                    header.col(|ui| {
+                        ui.strong("Format");
+                    });
+                    header.col(|ui| {
+                        ui.strong("S-Size");
+                    });
+                    header.col(|ui| {
+                        ui.strong("T-Size");
+                    });
+                    header.col(|ui| {
+                        ui.strong("Transp. 0");
+                    });
+                })
+                .body(|mut body| {
+                    for tex in &textures {
+                        body.row(18.0, |mut row| {
+                            row.col(|ui| {
+                                ui.label(&tex.name);
+                            });
+                            row.col(|ui| {
+                                ui.label(format!("0x{:X}", tex.params.texture_data_offset()));
+                            });
+                            row.col(|ui| {
+                                ui.label(tex.params.width().to_string());
+                            });
+                            row.col(|ui| {
+                                ui.label(tex.params.height().to_string());
+                            });
+                            row.col(|ui| {
+                                ui.label(tex.params.format().to_string());
+                            });
+                            row.col(|ui| {
+                                ui.label(tex.params.s_size().to_string());
+                            });
+                            row.col(|ui| {
+                                ui.label(tex.params.t_size().to_string());
+                            });
+                            row.col(|ui| {
+                                ui.label(tex.params.is_color_0_transparent().to_string());
+                            });
+                        });
+                    }
+                });
+        });
+
+        CollapsingHeader::new("Palette Dictionary").show(ui, |ui| {
+            let mut palettes: Vec<&NsPalette> = nstex.palettes.iter().collect();
+            palettes.sort_by_key(|p| &p.name);
+
+            TableBuilder::new(ui)
+                .striped(true)
+                .resizable(true)
+                .cell_layout(egui::Layout::left_to_right(egui::Align::Center))
+                .column(Column::auto())
+                .column(Column::remainder())
+                .min_scrolled_height(0.0)
+                .header(20.0, |mut header| {
+                    header.col(|ui| {
+                        ui.strong("Name");
+                    });
+                    header.col(|ui| {
+                        ui.strong("Offset");
+                    });
+                })
+                .body(|mut body| {
+                    for pal in &palettes {
+                        body.row(18.0, |mut row| {
+                            row.col(|ui| {
+                                ui.label(&pal.name);
+                            });
+                            row.col(|ui| {
+                                ui.label(format!("0x{:X}", pal.offset));
+                            });
+                        });
+                    }
+                });
+        });
     }
 }
 

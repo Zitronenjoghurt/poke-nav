@@ -14,7 +14,7 @@ impl<const N: usize> BinRead for ZeroPaddedString<N> {
     ) -> BinResult<Self> {
         let bytes = <[u8; N]>::read_options(reader, endian, args)?;
         let s = String::from_utf8(bytes.into())
-            .map(|s| s.trim_end_matches('\0').to_string())
+            .map(|s| s.split('\0').next().unwrap_or("").to_string())
             .map_err(|e| binrw::Error::Custom {
                 pos: 0,
                 err: Box::new(e),

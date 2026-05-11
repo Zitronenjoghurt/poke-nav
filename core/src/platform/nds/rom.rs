@@ -115,6 +115,8 @@ pub enum NdsRomReadError {
     Arm9Decompression(CompressionError),
     #[error("Failed to read the FNT")]
     FNTRead,
+    #[error("Invalid texture format: {0}")]
+    InvalidTextureFormat(u8),
     #[error("Unknown file format")]
     UnknownFileFormat,
 }

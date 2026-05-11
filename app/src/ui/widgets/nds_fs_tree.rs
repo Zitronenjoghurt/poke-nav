@@ -17,7 +17,7 @@ impl<'a> NdsFsTree<'a> {
     }
 
     pub fn show(self, ui: &mut Ui) -> NdsFsTreeResponse {
-        self.state.rebuild(self.fs, ui);
+        self.state.rebuild(self.fs);
 
         let (response, actions) = TreeView::new(Id::new(self.id)).show(ui, |builder| {
             let open = builder.node(
@@ -112,6 +112,8 @@ fn build_entries(
 fn format_icon(format: &NdsFileFormat) -> &'static str {
     match format {
         NdsFileFormat::Narc => icons::FILE_ARCHIVE,
+        NdsFileFormat::Nsbtx => icons::PANORAMA,
+        NdsFileFormat::Nstex => icons::IMAGES,
         NdsFileFormat::Gen4MapData => icons::MAP_TRIFOLD,
         NdsFileFormat::Gen4MapMatrix => icons::SQUARES_FOUR,
     }
@@ -125,7 +127,7 @@ pub struct NdsFsTreeState {
 }
 
 impl NdsFsTreeState {
-    pub fn rebuild(&mut self, fs: &NdsFileSystem, ui: &mut Ui) {
+    pub fn rebuild(&mut self, fs: &NdsFileSystem) {
         if !self.filter.dirty {
             return;
         }
