@@ -1,4 +1,4 @@
-use crate::nds::rom::{NdsRom, NdsRomReadError};
+use crate::platform::nds::rom::{NdsRom, NdsRomReadError};
 use crate::platform::Platform;
 use std::io::{Read, Seek};
 

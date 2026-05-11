@@ -1,13 +1,17 @@
-use crate::nds::rom::NdsRomReadError;
+use crate::platform::nds::rom::NdsRomReadError;
 use crate::rom::RomReadError;
+use std::fmt::Display;
 use std::io::{Read, Seek};
 
 pub mod gen4_map_data;
 pub mod gen4_map_matrix;
 pub mod hgss_map_header;
 pub mod narc;
+mod nsbtx;
 
-#[derive(Debug, Copy, Clone, Eq, PartialEq)]
+#[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
+#[cfg_attr(feature = "strum", derive(strum::EnumIter))]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub enum NdsFileFormat {
     Narc,
     Gen4MapData,
@@ -20,6 +24,14 @@ impl NdsFileFormat {
             NdsFileFormat::Narc => "narc",
             NdsFileFormat::Gen4MapData => "gen4mapdat",
             NdsFileFormat::Gen4MapMatrix => "gen4mapmat",
+        }
+    }
+
+    pub fn short_name(&self) -> &'static str {
+        match self {
+            NdsFileFormat::Narc => "NARC",
+            NdsFileFormat::Gen4MapData => "G4MAPDAT",
+            NdsFileFormat::Gen4MapMatrix => "G4MAPMAT",
         }
     }
 
@@ -43,6 +55,12 @@ impl NdsFileFormat {
                 "A map file for associating the rendered map to the map data."
             }
         }
+    }
+}
+
+impl Display for NdsFileFormat {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.short_name())
     }
 }
 

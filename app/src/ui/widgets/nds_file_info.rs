@@ -1,8 +1,8 @@
 use crate::ui::widgets::text_grid_frame::TextGridFrame;
 use egui::{CollapsingHeader, Grid, Response, Ui, Widget};
 use poke_nav::fmt::format_bytes_long;
-use poke_nav::nds::formats::ParsedNdsFile;
-use poke_nav::nds::fs::file::{NdsFile, NdsFileData};
+use poke_nav::platform::nds::formats::ParsedNdsFile;
+use poke_nav::platform::nds::fs::file::{NdsFile, NdsFileData};
 
 pub struct NdsFileInfo<'a> {
     file: &'a NdsFile,

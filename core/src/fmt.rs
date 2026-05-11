@@ -17,6 +17,10 @@ pub fn format_bytes_long(size: usize) -> String {
 }
 
 pub fn format_grid<D: Display>(grid: &[D], width: usize) -> String {
+    if grid.is_empty() || width == 0 {
+        return String::new();
+    }
+
     let height = grid.len() / width;
     let col_width = grid
         .iter()

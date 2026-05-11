@@ -1,7 +1,7 @@
-use crate::nds::formats::hgss_map_header::HGSSMapHeader;
-use crate::nds::fs::path::NdsPath;
-use crate::nds::games::{CommonFile, NdsGame};
-use crate::nds::rom::NdsRom;
+use crate::platform::nds::formats::hgss_map_header::HGSSMapHeader;
+use crate::platform::nds::fs::path::NdsPath;
+use crate::platform::nds::games::{CommonFile, NdsGame};
+use crate::platform::nds::rom::NdsRom;
 use binrw::BinRead;
 use std::io::Cursor;
 

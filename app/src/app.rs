@@ -1,3 +1,4 @@
+use crate::event::EventBuffers;
 use crate::ui::icons;
 use crate::ui::state::UiState;
 use crate::ui::tabs::{Tab, TabViewer};
@@ -60,6 +61,8 @@ impl eframe::App for PokeNav {
 // Rendering
 impl PokeNav {
     fn render(&mut self, ui: &mut Ui) {
+        EventBuffers::flush(ui.ctx());
+
         self.show_top_bar(ui);
 
         CentralPanel::default().show_inside(ui, |ui| {

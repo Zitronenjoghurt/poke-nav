@@ -1,5 +1,5 @@
 use crate::ui::icons;
-use strum_macros::EnumIter;
+use strum::EnumIter;
 
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
 pub struct Settings {

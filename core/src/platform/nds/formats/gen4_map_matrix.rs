@@ -25,10 +25,33 @@ impl Gen4MapMatrix {
             reader.read_exact(&mut buf)?;
             let width = buf[0] as u64;
             let height = buf[1] as u64;
+            let has_headers = buf[2];
+            let has_altitudes = buf[3];
             let prefix_len = buf[4] as u64;
 
-            let bytes_per_cell =
-                2u64 + if buf[2] == 1 { 2 } else { 0 } + if buf[3] == 1 { 1 } else { 0 };
+            if width == 0 || height == 0 {
+                return Ok(false);
+            }
+
+            if width > 64 || height > 64 {
+                return Ok(false);
+            }
+
+            if has_headers > 1 || has_altitudes > 1 {
+                return Ok(false);
+            }
+
+            if prefix_len > 0 {
+                let mut name_buf = vec![0u8; prefix_len as usize];
+                reader.read_exact(&mut name_buf)?;
+                if !name_buf.iter().all(|&b| (0x20..=0x7E).contains(&b)) {
+                    return Ok(false);
+                }
+            }
+
+            let bytes_per_cell = 2u64
+                + if has_headers == 1 { 2 } else { 0 }
+                + if has_altitudes == 1 { 1 } else { 0 };
             let expected = 5 + prefix_len + (width * height * bytes_per_cell);
             Ok(total_size == expected)
         })();

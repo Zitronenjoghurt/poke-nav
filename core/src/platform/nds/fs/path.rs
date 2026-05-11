@@ -42,6 +42,12 @@ impl From<String> for NdsPath {
     }
 }
 
+impl From<&String> for NdsPath {
+    fn from(s: &String) -> Self {
+        NdsPath(s.to_string())
+    }
+}
+
 impl AsRef<str> for NdsPath {
     fn as_ref(&self) -> &str {
         &self.0

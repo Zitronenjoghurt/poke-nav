@@ -16,7 +16,7 @@ pub fn show(v: &mut TabViewer, ui: &mut egui::Ui) {
             TaskUi::Handled(_) => {}
             TaskUi::Done(rom) => {
                 if let Some(nds) = rom.nds() {
-                    NdsFileExplorer::new(v.toasts, &nds.fs, &mut v.state).ui(ui);
+                    NdsFileExplorer::new(v.toasts, &nds.fs, v.state).ui(ui);
                 } else {
                     ui.label("ROM has no file system.");
                 }

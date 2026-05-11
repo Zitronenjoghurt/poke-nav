@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-poke-nav = { workspace = true, features = ["zip"] }
+poke-nav = { workspace = true, features = ["serde", "strum", "zip"] }
 anyhow = "1.0.102"
 eframe = { version = "0.34.2", default-features = false, features = ["persistence"] }
 egui = "0.34.2"
@@ -15,9 +15,9 @@ egui-notify = "0.22.0"
 egui-phosphor = { version = "0.12.0", features = ["regular"] }
 log = "0.4.29"
 rfd = "0.17.2"
-serde = { version = "1.0.228", features = ["derive"] }
+serde = { workspace = true }
 strum = { workspace = true }
-strum_macros = { workspace = true }
+web-time = "1.1.0"
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 eframe = { version = "0.34.2", default-features = false, features = ["persistence", "wayland", "wgpu", "x11"] }

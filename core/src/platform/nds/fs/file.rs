@@ -1,7 +1,7 @@
-use crate::nds::formats::gen4_map_data::Gen4MapData;
-use crate::nds::formats::narc::Narc;
-use crate::nds::formats::{NdsFileFormat, ParsedNdsFile};
-use crate::nds::fs::NdsFileSystem;
+use crate::platform::nds::formats::gen4_map_data::Gen4MapData;
+use crate::platform::nds::formats::narc::Narc;
+use crate::platform::nds::formats::{NdsFileFormat, ParsedNdsFile};
+use crate::platform::nds::fs::NdsFileSystem;
 use std::io::{Cursor, Write};
 
 pub struct NdsFile {

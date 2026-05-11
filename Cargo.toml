@@ -4,5 +4,5 @@ members = ["app", "core", "server"]
 
 [workspace.dependencies]
 poke-nav = { path = "core" }
-strum = "0.28.0"
-strum_macros = "0.28.0"
+serde = { version = "1.0.228", features = ["derive"] }
+strum = { version = "0.28.0", features = ["derive"] }

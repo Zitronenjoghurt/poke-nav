@@ -1,7 +1,7 @@
 use crate::ui::icons;
 use egui::{Response, Ui, Widget};
 use egui_extras::{Column, TableBuilder};
-use poke_nav::nds::games::hgss::HgSsRom;
+use poke_nav::platform::nds::games::hgss::HgSsRom;
 
 pub struct HgSsMapHeadersWidget<'a> {
     rom: &'a HgSsRom<'a>,

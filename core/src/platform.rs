@@ -1,5 +1,7 @@
 use std::fmt::Display;
 
+pub mod nds;
+
 #[derive(Debug, Copy, Clone)]
 pub enum Platform {
     Nds,

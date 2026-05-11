@@ -1,9 +1,9 @@
 use crate::compression::blz::blz_decompress;
 use crate::compression::CompressionError;
-use crate::nds::fs;
-use crate::nds::games::dpp::DppRom;
-use crate::nds::games::hgss::HgSsRom;
-use crate::nds::games::{NdsGame, NdsGameRom};
+use crate::platform::nds::fs;
+use crate::platform::nds::games::dpp::DppRom;
+use crate::platform::nds::games::hgss::HgSsRom;
+use crate::platform::nds::games::{NdsGame, NdsGameRom};
 use crate::rom::{RomReadError, RomTrait};
 use binrw::BinRead;
 use std::io::{Read, Seek, SeekFrom};

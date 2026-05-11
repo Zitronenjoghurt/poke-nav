@@ -1,7 +1,7 @@
-use crate::nds::fs::path::NdsPath;
-use crate::nds::games::dpp::{DppFile, DppRom};
-use crate::nds::games::hgss::{HgSsFile, HgSsRom};
-use crate::nds::rom::NdsRom;
+use crate::platform::nds::fs::path::NdsPath;
+use crate::platform::nds::games::dpp::{DppFile, DppRom};
+use crate::platform::nds::games::hgss::{HgSsFile, HgSsRom};
+use crate::platform::nds::rom::NdsRom;
 
 pub mod dpp;
 pub mod hgss;

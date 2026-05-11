@@ -2,7 +2,7 @@ use crate::ui::state::UiState;
 use crate::utils::task::Task;
 use egui::{Ui, WidgetText};
 use poke_nav::rom::Rom;
-use strum_macros::EnumIter;
+use strum::EnumIter;
 
 mod file_explorer;
 mod file_info;

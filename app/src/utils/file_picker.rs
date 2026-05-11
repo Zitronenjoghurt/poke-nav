@@ -1,3 +1,4 @@
+use crate::event::AppEvent;
 use crate::utils::task::Task;
 use crate::utils::NativeOnlySend;
 use anyhow::Context;
@@ -57,5 +58,6 @@ impl FilePicker {
                 let mut cursor = Cursor::new(file.data);
                 Rom::read(&mut cursor).context("Failed to parse ROM")
             });
+        AppEvent::RomLoaded.send(ui.ctx());
     }
 }

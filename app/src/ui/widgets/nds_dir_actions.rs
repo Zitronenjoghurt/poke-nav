@@ -1,7 +1,7 @@
 use crate::utils::file_saver::FileSaver;
 use egui::Response;
-use poke_nav::nds::fs::dir::NdsDirectory;
-use poke_nav::nds::fs::NdsFileSystem;
+use poke_nav::platform::nds::fs::dir::NdsDirectory;
+use poke_nav::platform::nds::fs::NdsFileSystem;
 
 pub struct NdsDirActions<'a> {
     fs: &'a NdsFileSystem,

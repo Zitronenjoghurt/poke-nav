@@ -1,10 +1,11 @@
 use crate::fmt::format_bytes;
-use crate::nds::fs::dir::NdsDirectory;
-use crate::nds::fs::file::{NdsFile, NdsFileData};
-use crate::nds::fs::path::NdsPath;
-use crate::nds::rom::fat::{Fat, FatEntry};
-use crate::nds::rom::fnt::{FntMainEntry, FntSubEntry};
-use crate::nds::rom::NdsRomReadError;
+use crate::platform::nds::fs::dir::NdsDirectory;
+use crate::platform::nds::fs::file::{NdsFile, NdsFileData};
+use crate::platform::nds::fs::path::NdsPath;
+use crate::platform::nds::fs::tree::NdsFileTreeFilter;
+use crate::platform::nds::rom::fat::{Fat, FatEntry};
+use crate::platform::nds::rom::fnt::{FntMainEntry, FntSubEntry};
+use crate::platform::nds::rom::NdsRomReadError;
 use crate::rom::RomReadError;
 use binrw::{BinRead, BinReaderExt};
 use std::io::{Read, Seek, SeekFrom};
@@ -12,6 +13,7 @@ use std::io::{Read, Seek, SeekFrom};
 pub mod dir;
 pub mod file;
 pub mod path;
+pub mod tree;
 
 pub const ROOT_DIR_ID: u16 = 0xF000;
 
@@ -245,6 +247,10 @@ impl NdsFileSystem {
 
     pub fn child_files(&self, dir_id: u16) -> impl Iterator<Item = &NdsFile> {
         self.files.iter().filter(move |f| f.parent_dir_id == dir_id)
+    }
+
+    pub fn build_tree(&self, filter: &NdsFileTreeFilter) -> tree::NdsFileTree {
+        tree::NdsFileTree::build(self, filter)
     }
 }
 

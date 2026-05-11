@@ -1,5 +1,5 @@
-use crate::nds::fs::NdsFileSystem;
-use crate::nds::rom::fat::FatEntry;
+use crate::platform::nds::fs::NdsFileSystem;
+use crate::platform::nds::rom::fat::FatEntry;
 use crate::rom::RomReadError;
 use binrw::{binrw, BinRead};
 use std::io::{Read, Seek, SeekFrom};
