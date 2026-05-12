@@ -90,19 +90,16 @@ impl NstexCacheKey {
             NstexDecodeMode::Sheet {
                 palette_index,
                 columns,
-            } => {
-                let texture_names = nstex
-                    .textures
-                    .iter()
-                    .map(|t| t.name.clone())
-                    .collect::<Vec<_>>()
-                    .join("+");
-                Ok(Self::Sheet {
-                    path: path.clone(),
-                    palette_name: palette_index.map(|i| nstex.get_palette(i).unwrap().name.clone()),
-                    columns: *columns,
-                })
-            }
+            } => Ok(Self::Sheet {
+                path: path.clone(),
+                palette_name: palette_index.map(|i| {
+                    nstex
+                        .get_palette(i)
+                        .map(|p| p.name.clone())
+                        .unwrap_or_default()
+                }),
+                columns: *columns,
+            }),
         }
     }
 
