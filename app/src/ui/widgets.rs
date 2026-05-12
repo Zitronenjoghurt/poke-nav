@@ -1,3 +1,4 @@
+pub mod debug_widget;
 pub mod generic_multi_select;
 pub mod generic_select;
 pub mod hgss_map_headers;
@@ -8,7 +9,8 @@ pub mod nds_file_info;
 pub mod nds_fs_tree;
 pub mod nds_fs_tree_filter;
 pub mod nds_path;
-pub mod nstex_ref_selector;
+pub mod nstex_mode_selector;
+pub mod nstex_palette_selector;
 pub mod nstex_viewer;
 pub mod reset_slider;
 pub mod rom_actions;

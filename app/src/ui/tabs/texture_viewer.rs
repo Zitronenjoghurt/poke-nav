@@ -13,7 +13,7 @@ pub fn show(v: &mut TabViewer, ui: &mut egui::Ui) {
                     && let Some(file) = nds.fs.get_file(path.clone())
                     && let Some(nstex) = file.data.nstex()
                 {
-                    NstexViewer::new(nstex, &mut v.state.selected_nstex_ref, v.texture_cache)
+                    NstexViewer::new(path, nstex, &mut v.state.nstex_decode_mode, v.texture_cache)
                         .ui(ui);
                 } else {
                     ui.label("No texture selected.");

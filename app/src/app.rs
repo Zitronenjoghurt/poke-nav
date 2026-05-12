@@ -66,6 +66,7 @@ impl eframe::App for PokeNav {
 impl PokeNav {
     fn render(&mut self, ui: &mut Ui) {
         EventBuffers::flush(ui.ctx());
+        self.texture_cache.update(ui.ctx());
 
         self.show_top_bar(ui);
 
@@ -124,16 +125,20 @@ impl PokeNav {
 
                 ui.separator();
 
+                if ui.button(icons::BUG).on_hover_text("Debug").clicked() {
+                    self.open_tab(Tab::Debug);
+                }
+
+                if ui.button(icons::GEAR).on_hover_text("Settings").clicked() {
+                    self.open_tab(Tab::Settings);
+                }
+
                 if ui
                     .button(icons::FOLDER_OPEN)
                     .on_hover_text("Load ROM")
                     .clicked()
                 {
                     FilePicker::pick_rom(&mut self.loaded_rom, ui);
-                }
-
-                if ui.button(icons::GEAR).on_hover_text("Settings").clicked() {
-                    self.open_tab(Tab::Settings);
                 }
 
                 ui.menu_button(icons::FILES, |ui| {

@@ -1,6 +1,6 @@
 use crate::event::AppEvent;
 use crate::ui::widgets::nds_fs_tree::NdsFsTreeState;
-use poke_nav::platform::nds::formats::nstex::NstexRef;
+use poke_nav::platform::nds::formats::nstex::NstexDecodeMode;
 use poke_nav::platform::nds::fs::path::NdsPath;
 
 pub mod settings;
@@ -12,7 +12,7 @@ pub struct UiState {
     #[serde(skip, default)]
     pub selected_file_explorer_path: Option<NdsPath>,
     #[serde(skip, default)]
-    pub selected_nstex_ref: NstexRef,
+    pub nstex_decode_mode: NstexDecodeMode,
 }
 
 impl UiState {

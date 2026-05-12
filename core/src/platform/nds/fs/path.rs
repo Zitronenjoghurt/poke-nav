@@ -28,6 +28,10 @@ impl NdsPath {
     pub fn is_empty(&self) -> bool {
         self.components().count() == 0
     }
+
+    pub fn last_component(&self) -> Option<&str> {
+        self.components().last()
+    }
 }
 
 impl From<&str> for NdsPath {

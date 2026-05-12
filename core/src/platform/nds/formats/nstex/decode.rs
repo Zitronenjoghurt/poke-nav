@@ -8,8 +8,10 @@ pub enum NstexDecodeError {
     MissingPalette,
     #[error("Invalid texture format: {0}")]
     InvalidTextureFormat(u8),
-    #[error("Index out of bounds")]
-    InvalidTextureOrPaletteIndex,
+    #[error("Invalid palette index")]
+    InvalidPaletteIndex,
+    #[error("Invalid texture index")]
+    InvalidTextureIndex,
 }
 
 pub fn decode_texture(

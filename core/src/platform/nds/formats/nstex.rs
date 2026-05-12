@@ -72,7 +72,7 @@ impl Nstex {
 
         reader.seek(SeekFrom::Start(base + header.chunk_size as u64))?;
 
-        let textures = texture_dict
+        let mut textures = texture_dict
             .into_iter()
             .map(|(name, params)| {
                 let format = TextureFormat::from_raw(params.format())
@@ -99,8 +99,9 @@ impl Nstex {
                 })
             })
             .collect::<Result<Vec<_>, RomReadError>>()?;
+        textures.sort_by(|a, b| alphanumeric_sort::compare_str(&a.name, &b.name));
 
-        let palettes: Vec<NsPalette> = palette_dict
+        let mut palettes: Vec<NsPalette> = palette_dict
             .into_iter()
             .map(|(name, params)| NsPalette {
                 name,
@@ -108,6 +109,7 @@ impl Nstex {
                 palette_data: Arc::clone(&palette_data),
             })
             .collect();
+        palettes.sort_by(|a, b| alphanumeric_sort::compare_str(&a.name, &b.name));
 
         Ok(Self {
             header,
@@ -116,8 +118,69 @@ impl Nstex {
         })
     }
 
-    pub fn decode(&self, reference: &NstexRef) -> Result<RgbaBuffer, NstexDecodeError> {
-        reference.decode(self)
+    pub fn get_texture(&self, index: usize) -> Result<&NsTexture, NstexDecodeError> {
+        self.textures
+            .get(index)
+            .ok_or(NstexDecodeError::InvalidTextureIndex)
+    }
+
+    pub fn get_palette(&self, index: usize) -> Result<&NsPalette, NstexDecodeError> {
+        self.palettes
+            .get(index)
+            .ok_or(NstexDecodeError::InvalidPaletteIndex)
+    }
+
+    pub fn decode(&self, mode: &NstexDecodeMode) -> Result<RgbaBuffer, NstexDecodeError> {
+        match mode {
+            NstexDecodeMode::Single {
+                texture_index,
+                palette_index,
+            } => {
+                let texture = self.get_texture(*texture_index)?;
+                let palette = palette_index.map(|i| self.get_palette(i)).transpose()?;
+                texture.decode(palette)
+            }
+            NstexDecodeMode::Sheet {
+                palette_index,
+                columns,
+            } => self.decode_sheet(*palette_index, *columns),
+        }
+    }
+
+    fn decode_sheet(
+        &self,
+        palette_index: Option<usize>,
+        columns: Option<usize>,
+    ) -> Result<RgbaBuffer, NstexDecodeError> {
+        let palette = palette_index.map(|i| self.get_palette(i)).transpose()?;
+        let decoded = self
+            .textures
+            .iter()
+            .map(|tex| tex.decode(palette))
+            .collect::<Result<Vec<_>, _>>()?;
+
+        let cell_w = decoded.iter().map(|b| b.width()).max().unwrap();
+        let cell_h = decoded.iter().map(|b| b.height()).max().unwrap();
+        let cols = columns.unwrap_or_else(|| (decoded.len() as f64).sqrt().ceil() as usize);
+        let rows = decoded.len().div_ceil(cols);
+
+        let mut composite = RgbaBuffer::new(cell_w * cols as u32, cell_h * rows as u32);
+        for (i, buf) in decoded.iter().enumerate() {
+            let grid_x = (i % cols) as u32 * cell_w;
+            let grid_y = (i / cols) as u32 * cell_h;
+            let off_x = grid_x + (cell_w - buf.width()) / 2;
+            let off_y = grid_y + (cell_h - buf.height()) / 2;
+
+            for y in 0..buf.height() {
+                for x in 0..buf.width() {
+                    if let Some(px) = buf.get_pixel(x, y) {
+                        composite.set_pixel(off_x + x, off_y + y, px);
+                    }
+                }
+            }
+        }
+
+        Ok(composite)
     }
 }
 
@@ -163,33 +226,33 @@ impl NstexHeader {
     }
 }
 
-#[derive(Debug, Default, Clone, Copy, PartialEq, Eq, Hash)]
-pub struct NstexRef {
-    pub texture_index: usize,
-    pub palette_index: Option<usize>,
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum NstexDecodeMode {
+    Single {
+        texture_index: usize,
+        palette_index: Option<usize>,
+    },
+    Sheet {
+        palette_index: Option<usize>,
+        columns: Option<usize>,
+    },
 }
 
-impl NstexRef {
-    pub fn new(texture_index: usize, palette_index: Option<usize>) -> Self {
-        Self {
-            texture_index,
-            palette_index,
+impl Default for NstexDecodeMode {
+    fn default() -> Self {
+        Self::Single {
+            texture_index: 0,
+            palette_index: None,
         }
     }
+}
 
-    pub fn resolve<'a>(&self, nstex: &'a Nstex) -> Option<(&'a NsTexture, Option<&'a NsPalette>)> {
-        let texture = nstex.textures.get(self.texture_index)?;
-        let palette = match self.palette_index {
-            Some(i) => Some(nstex.palettes.get(i)?),
-            None => None,
-        };
-        Some((texture, palette))
-    }
-
-    pub fn decode(&self, nstex: &Nstex) -> Result<RgbaBuffer, NstexDecodeError> {
-        let (tex, pal) = self
-            .resolve(nstex)
-            .ok_or(NstexDecodeError::InvalidTextureOrPaletteIndex)?;
-        tex.decode(pal)
+impl NstexDecodeMode {
+    pub fn palette_index(&self) -> Option<usize> {
+        match self {
+            Self::Single { palette_index, .. } | Self::Sheet { palette_index, .. } => {
+                *palette_index
+            }
+        }
     }
 }
