@@ -1,5 +1,6 @@
 use crate::platform::nds::formats::gen4_map_data::Gen4MapData;
 use crate::platform::nds::formats::narc::Narc;
+use crate::platform::nds::formats::nstex::Nstex;
 use crate::platform::nds::formats::{NdsFileFormat, ParsedNdsFile};
 use crate::platform::nds::fs::NdsFileSystem;
 use std::io::{Cursor, Write};
@@ -78,6 +79,20 @@ impl NdsFileData {
                 parsed: ParsedNdsFile::Narc(narc),
                 ..
             } => Some(narc),
+            _ => None,
+        }
+    }
+
+    pub fn nstex(&self) -> Option<&Nstex> {
+        match &self {
+            NdsFileData::Parsed {
+                parsed: ParsedNdsFile::Nsbtx(nsbtx),
+                ..
+            } => Some(&nsbtx.texture),
+            NdsFileData::Parsed {
+                parsed: ParsedNdsFile::Nstex(nstex),
+                ..
+            } => Some(nstex),
             _ => None,
         }
     }

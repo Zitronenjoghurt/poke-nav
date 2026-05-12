@@ -8,6 +8,8 @@ pub mod nds_file_info;
 pub mod nds_fs_tree;
 pub mod nds_fs_tree_filter;
 pub mod nds_path;
+pub mod nstex_ref_selector;
+pub mod nstex_viewer;
 pub mod reset_slider;
 pub mod rom_actions;
 pub mod rom_info;

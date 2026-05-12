@@ -1,5 +1,6 @@
 use crate::ui::state::UiState;
 use crate::utils::task::Task;
+use crate::utils::textures::TextureCache;
 use egui::{Ui, WidgetText};
 use poke_nav::rom::Rom;
 use strum::EnumIter;
@@ -9,10 +10,12 @@ mod file_info;
 mod map;
 mod rom_info;
 mod settings;
+mod texture_viewer;
 
 pub struct TabViewer<'a> {
     pub state: &'a mut UiState,
     pub loaded_rom: &'a mut Task<Rom>,
+    pub texture_cache: &'a mut TextureCache,
     pub toasts: &'a mut egui_notify::Toasts,
 }
 
@@ -30,6 +33,7 @@ impl<'a> egui_dock::TabViewer for TabViewer<'a> {
             Tab::Map => map::show(self, ui),
             Tab::RomInfo => rom_info::show(self, ui),
             Tab::Settings => settings::show(self, ui),
+            Tab::TextureViewer => texture_viewer::show(self, ui),
         }
     }
 
@@ -49,6 +53,7 @@ pub enum Tab {
     Map,
     RomInfo,
     Settings,
+    TextureViewer,
 }
 
 impl Tab {
@@ -59,6 +64,7 @@ impl Tab {
             Tab::Map => "Map",
             Tab::RomInfo => "Rom Info",
             Tab::Settings => "Settings",
+            Tab::TextureViewer => "Texture Viewer",
         }
     }
 

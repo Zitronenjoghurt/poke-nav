@@ -3,9 +3,14 @@ name = "poke-nav"
 version = "0.1.0"
 edition = "2024"
 
+[features]
+default = []
+
 [dependencies]
 binrw = "0.15.1"
 brotli = "8.0.2"
+bytemuck = { version = "1.25.0", features = ["derive", "extern_crate_alloc"] }
+png = { version = "0.18.1", optional = true }
 serde = { workspace = true, optional = true }
 strum = { workspace = true, optional = true }
 thiserror = "2.0.18"

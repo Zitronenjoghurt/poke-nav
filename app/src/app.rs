@@ -4,6 +4,7 @@ use crate::ui::state::UiState;
 use crate::ui::tabs::{Tab, TabViewer};
 use crate::utils::file_picker::FilePicker;
 use crate::utils::task::Task;
+use crate::utils::textures::TextureCache;
 use eframe::{CreationContext, Frame, Storage};
 use egui::{CentralPanel, FontDefinitions, Panel, Ui};
 use egui_dock::DockState;
@@ -18,6 +19,8 @@ pub struct PokeNav {
     #[serde(skip, default)]
     loaded_rom: Task<Rom>,
     #[serde(skip, default)]
+    texture_cache: TextureCache,
+    #[serde(skip, default)]
     toasts: Toasts,
 }
 
@@ -27,6 +30,7 @@ impl Default for PokeNav {
             dock: DockState::new(vec![Tab::FileExplorer]),
             ui_state: Default::default(),
             loaded_rom: Default::default(),
+            texture_cache: Default::default(),
             toasts: Default::default(),
         }
     }
@@ -69,6 +73,7 @@ impl PokeNav {
             let mut viewer = TabViewer {
                 state: &mut self.ui_state,
                 loaded_rom: &mut self.loaded_rom,
+                texture_cache: &mut self.texture_cache,
                 toasts: &mut self.toasts,
             };
             egui_dock::DockArea::new(&mut self.dock)
@@ -144,6 +149,14 @@ impl PokeNav {
 
                 if ui.button(icons::INFO).on_hover_text("Rom Info").clicked() {
                     self.open_tab(Tab::RomInfo);
+                }
+
+                if ui
+                    .button(icons::PANORAMA)
+                    .on_hover_text("Texture Viewer")
+                    .clicked()
+                {
+                    self.open_tab(Tab::TextureViewer);
                 }
             });
         });

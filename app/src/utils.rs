@@ -1,6 +1,7 @@
 pub mod file_picker;
 pub mod file_saver;
 pub mod task;
+pub mod textures;
 
 #[cfg(not(target_arch = "wasm32"))]
 pub trait NativeOnlySend: Send {}

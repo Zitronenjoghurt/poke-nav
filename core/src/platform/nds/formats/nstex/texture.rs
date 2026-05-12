@@ -1,3 +1,6 @@
+use crate::gfx::rgba::RgbaBuffer;
+use crate::platform::nds::formats::nstex::decode::{decode_texture, NstexDecodeError};
+use crate::platform::nds::formats::nstex::palette::NsPalette;
 use binrw::binrw;
 
 pub struct NsTexture {
@@ -7,14 +10,36 @@ pub struct NsTexture {
     pub data2: Vec<u8>,
 }
 
+impl NsTexture {
+    pub fn decode(&self, palette: Option<&NsPalette>) -> Result<RgbaBuffer, NstexDecodeError> {
+        decode_texture(self, palette)
+    }
+
+    pub fn format(&self) -> Result<TextureFormat, NstexDecodeError> {
+        TextureFormat::from_raw(self.params.format())
+            .ok_or(NstexDecodeError::InvalidTextureFormat(self.params.format()))
+    }
+
+    pub fn dimensions(&self) -> (u32, u32) {
+        self.params.dimensions()
+    }
+}
+
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum TextureFormat {
+    /// A3I5 Translucent Texture
     A3I5 = 1,
+    /// 4-Color Palette Texture
     Palette4 = 2,
+    /// 16-Color Palette Texture
     Palette16 = 3,
+    /// 256-Color Palette Texture
     Palette256 = 4,
+    /// Block-Compressed Texture
     Compressed = 5,
+    /// A5I3 Translucent Texture
     A5I3 = 6,
+    /// Direct RGBA Texture
     Direct = 7,
 }
 
@@ -88,5 +113,9 @@ impl TextureParams {
 
     pub fn height(&self) -> u32 {
         (self.width_height >> 11) & 0x7FF
+    }
+
+    pub fn dimensions(&self) -> (u32, u32) {
+        (self.width(), self.height())
     }
 }

@@ -1,3 +1,5 @@
+use crate::gfx::rgba::RgbaBuffer;
+use crate::platform::nds::formats::nstex::decode::NstexDecodeError;
 use crate::platform::nds::formats::nstex::palette::{NsPalette, PaletteParams};
 use crate::platform::nds::formats::nstex::texture::{NsTexture, TextureFormat, TextureParams};
 use crate::platform::nds::rom::NdsRomReadError;
@@ -8,6 +10,7 @@ use binrw::{binrw, BinRead};
 use std::io::{Read, Seek, SeekFrom};
 use std::sync::Arc;
 
+mod decode;
 pub mod palette;
 pub mod texture;
 
@@ -101,7 +104,7 @@ impl Nstex {
             .into_iter()
             .map(|(name, params)| NsPalette {
                 name,
-                offset: params.palette_data_offset(),
+                offset: params.data_offset(),
                 palette_data: Arc::clone(&palette_data),
             })
             .collect();
@@ -111,6 +114,10 @@ impl Nstex {
             textures,
             palettes,
         })
+    }
+
+    pub fn decode(&self, reference: &NstexRef) -> Result<RgbaBuffer, NstexDecodeError> {
+        reference.decode(self)
     }
 }
 
@@ -153,5 +160,36 @@ impl NstexHeader {
 
     pub fn palette_data_size(&self) -> usize {
         (self.palette_data_size as usize) << 3
+    }
+}
+
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq, Hash)]
+pub struct NstexRef {
+    pub texture_index: usize,
+    pub palette_index: Option<usize>,
+}
+
+impl NstexRef {
+    pub fn new(texture_index: usize, palette_index: Option<usize>) -> Self {
+        Self {
+            texture_index,
+            palette_index,
+        }
+    }
+
+    pub fn resolve<'a>(&self, nstex: &'a Nstex) -> Option<(&'a NsTexture, Option<&'a NsPalette>)> {
+        let texture = nstex.textures.get(self.texture_index)?;
+        let palette = match self.palette_index {
+            Some(i) => Some(nstex.palettes.get(i)?),
+            None => None,
+        };
+        Some((texture, palette))
+    }
+
+    pub fn decode(&self, nstex: &Nstex) -> Result<RgbaBuffer, NstexDecodeError> {
+        let (tex, pal) = self
+            .resolve(nstex)
+            .ok_or(NstexDecodeError::InvalidTextureOrPaletteIndex)?;
+        tex.decode(pal)
     }
 }
